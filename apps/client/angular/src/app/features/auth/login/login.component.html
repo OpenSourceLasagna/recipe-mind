@@ -1,0 +1,22 @@
+<section class="w-full max-w-sm" hlmCard>
+  <div hlmCardHeader>
+    <h3 hlmCardTitle>{{ typeText().title }}</h3>
+    <p hlmCardDescription>{{ typeText().description }}</p>
+
+    <div hlmCardAction>
+      <button hlmBtn variant="link" (click)="changeType()">{{ typeText().button }}</button>
+    </div>
+  </div>
+  <div hlmCardContent>
+    <app-email-form
+      [authError]="error()"
+      [mode]="mode()"
+      (submit)="onSubmitEmailLogin($event)"
+    ></app-email-form>
+  </div>
+  <hlm-field-separator />
+  <div hlmCardFooter class="flex-col gap-2">
+    <button hlmBtn variant="outline" class="w-full" disabled>Login with Google</button>
+    <button hlmBtn variant="outline" class="w-full" disabled>Login with Github</button>
+  </div>
+</section>

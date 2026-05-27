@@ -1,0 +1,23 @@
+<div class="min-h-screen flex flex-col md:flex-row">
+  <!-- Left image: hidden on mobile, 50% on desktop -->
+  <div class="hidden md:block md:w-1/2">
+    <img
+      ngSrc="images/culinarAI-hero.png"
+      alt="Modern isometric recipe knowledge graph illustration featuring interconnected food ingredients, dishes, cooking tools, and recipe UI elements on a dark background, centered around an open cookbook with glowing network connections representing an AI-powered recipe management system."
+      class="object-cover w-full h-full min-h-screen"
+      width="700"
+      height="700"
+      />
+  </div>
+
+  <!-- Right side: login card area -->
+  <div class="relative w-full md:w-1/2 flex items-center justify-center overflow-hidden bg-[#0f1113]">
+    <div
+      class="absolute inset-0"
+      style="background-image: linear-gradient(c w-rgba(0,0,0,0.8), rgba(0,0,0,0.95)), url('images/culinarAI-hero.png'); background-size: cover; background-position: center; filter: blur(90px);"
+    ></div>
+    <div class="relative z-10 w-full h-full flex items-center justify-center">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</div>

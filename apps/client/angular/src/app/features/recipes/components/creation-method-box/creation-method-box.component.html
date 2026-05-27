@@ -1,0 +1,15 @@
+<hlm-card (click)="onClick()" [attr.data-state]="active() ? 'active' : 'inactive'" size="default" class="mx-auto w-full h-full cursor-pointer max-w-sm sm:max-w-md lg:max-w-full data-[state=active]:drop-shadow-md">
+  <hlm-card-header>
+    <div class="flex flex-col sm:items-start gap-3">
+      <div class="flex items-start sm:flex-col sm:items-start">
+        <div class="text-2xl sm:text-3xl lg:mb-1" aria-hidden="true">
+          <ng-content select="[cardIcon]"></ng-content>
+        </div>
+        <h3 hlmCardTitle class="ml-2 sm:ml-0 font-semibold"><ng-content select="[cardTitle]"></ng-content></h3>
+      </div>
+      <p hlmCardDescription>
+        <ng-content select="[cardDescription]"></ng-content>
+      </p>
+    </div>
+  </hlm-card-header>
+</hlm-card>

@@ -1,0 +1,41 @@
+<section class="space-y-4 rounded-xl border p-4">
+  <div>
+    <h2 class="text-base font-semibold">Ingredients</h2>
+    <p class="text-sm text-slate-500">Add at least one ingredient with quantity and unit.</p>
+  </div>
+
+  @for (ingredient of ingredients(); track index; let index = $index) {
+    <div class="grid gap-3 rounded-lg border p-4 grid-cols-1 md:grid-cols-10 items-end">
+
+      <hlm-field class="md:col-span-5">
+        <label hlmFieldLabel>Ingredient</label>
+        <input hlmInput type="text" placeholder="Tomatoes"
+               [value]="ingredient.ingredientName"
+               (input)="updateField(index, 'ingredientName', nameInput.value)" #nameInput />
+      </hlm-field>
+
+      <hlm-field class="md:col-span-2">
+        <label hlmFieldLabel>Quantity</label>
+        <input hlmInput type="number"
+               [value]="ingredient.quantity"
+               (input)="updateField(index, 'quantity', +qtyInput.value || 0)" #qtyInput />
+      </hlm-field>
+
+      <hlm-field class="md:col-span-2">
+        <label hlmFieldLabel>Unit</label>
+        <input hlmInput type="text" placeholder="pcs, g"
+               [value]="ingredient.unit"
+               (input)="updateField(index, 'unit', unitInput.value)" #unitInput />
+      </hlm-field>
+
+      @if (index === 0) {
+        <button hlmBtn type="button" (click)="addIngredient()">Add</button>
+      } @else {
+        <button hlmBtn variant="destructive" type="button" (click)="removeIngredient(index)">
+          Remove
+        </button>
+      }
+    </div>
+  }
+  <ng-content select="[error]"></ng-content>
+</section>

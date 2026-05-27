@@ -1,0 +1,112 @@
+<div class="grid px-4 gap-4 md:grid-cols-4">
+  <app-creation-method-box [active]="activeMethod() == 'link'" (click)="setActiveMethod('link')">
+    <ng-container cardIcon>
+      <ng-icon name="link" />
+    </ng-container>
+    <ng-container cardTitle>Import from URL</ng-container>
+    <ng-container cardDescription
+      >Paste any recipe website and our AI will extract the ingredients and
+      instructions.</ng-container
+    >
+  </app-creation-method-box>
+
+  <app-creation-method-box [active]="activeMethod() == 'image'" (click)="setActiveMethod('image')">
+    <ng-container cardIcon>
+      <ng-icon name="image" />
+    </ng-container>
+    <ng-container cardTitle>Upload Image</ng-container>
+    <ng-container cardDescription
+      >Upload an picture of a handwritten recipe or cookbook page to digitize it.</ng-container
+    >
+  </app-creation-method-box>
+
+  <app-creation-method-box [active]="activeMethod() == 'text'" (click)="setActiveMethod('text')">
+    <ng-container cardIcon>
+      <ng-icon name="text" />
+    </ng-container>
+    <ng-container cardTitle>Paste</ng-container>
+    <ng-container cardDescription
+      >Simply paste a chunk of messy text for AI formatting.</ng-container
+    >
+  </app-creation-method-box>
+
+  <app-creation-method-box [active]="activeMethod() == 'editor'" (click)="setActiveMethod('editor')">
+    <ng-container cardIcon>
+      <ng-icon name="text" />
+    </ng-container>
+    <ng-container cardTitle>Manual Editor</ng-container>
+    <ng-container cardDescription>Use the editor to type in the recipe yourself.</ng-container>
+  </app-creation-method-box>
+</div>
+
+<div class="mx-4 mt-4">
+  <hlm-card size="sm" class="w-full max-w-sm mx-auto sm:max-w-md md:max-w-full">
+    @switch (activeMethod()) {
+      @default
+      @case ('link') {
+        <hlm-card-header>
+          <h3 hlmCardTitle class="font-semibold">Import from URL</h3>
+        </hlm-card-header>
+        <hlm-field hlmCardContent>
+          <label hlmFieldLabel for="input-demo-api-key">Recipe URL</label>
+          <input
+            hlmInput
+            type="text"
+            placeholder="https://yummyrecipe.com/lasagna"
+            [(ngModel)]="urlInput"
+          />
+          <hlm-field-description
+            >AI will strip the ads and stories to give you just the recipe.</hlm-field-description
+          >
+        </hlm-field>
+      }
+      @case ('image') {
+        <hlm-card-header>
+          <h3 hlmCardTitle class="font-semibold">Upload image</h3>
+        </hlm-card-header>
+      }
+      @case ('text') {
+        <hlm-card-header>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-2">
+            <div>
+              <h3 hlmCardTitle class="font-semibold">Paste Recipe</h3>
+              <hlm-field-description
+                >Paste your raw recipe text below and click 'Paste'. Our AI will parse, clean, and
+                organize it for you.</hlm-field-description
+              >
+            </div>
+            <button hlmBtn size="default" variant="outline" class="sm:ml-auto md:w-xs">
+              Paste from Clipboard
+            </button>
+          </div>
+        </hlm-card-header>
+
+        <div class="w-full" hlmCardContent>
+          <hlm-field>
+            <textarea
+              hlmInput
+              placeholder="Paste or type your recipe here..."
+              class="min-h-32 w-full"
+            ></textarea>
+          </hlm-field>
+        </div>
+      }
+      @case ('editor') {
+        <hlm-card-header>
+          <h3 hlmCardTitle class="font-semibold">Manual Editor</h3>
+        </hlm-card-header>
+        <div hlmCardContent>
+          <!-- TODO preserve state or even better save drafts in local storage -->
+          <app-recipe-creation-form></app-recipe-creation-form>
+        </div>
+      }
+    }
+
+    <hlm-card-footer>
+      <button hlmBtn size="default" variant="default" class="mx-auto min-w-full md:min-w-sm">
+        Parse Recipe
+      </button>
+
+    </hlm-card-footer>
+  </hlm-card>
+</div>

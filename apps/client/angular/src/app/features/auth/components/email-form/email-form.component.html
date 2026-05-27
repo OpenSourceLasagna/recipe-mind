@@ -1,0 +1,50 @@
+<form (submit)="onSubmit($event)">
+  <div hlmFieldGroup>
+    <fieldset hlmFieldset>
+      <hlm-field>
+        <label hlmFieldLabel for="email">Email</label>
+        <hlm-input-group>
+          <input
+            hlmInputGroupInput
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            [formField]="emailLoginForm.email"
+            autocomplete="email"
+          />
+          <hlm-input-group-addon>
+            <ng-icon name="email" />
+          </hlm-input-group-addon>
+        </hlm-input-group>
+        @if (emailLoginForm.email().invalid() && emailLoginForm.email().touched()) {
+          <ul>
+            @for (error of emailLoginForm.email().errors(); track error) {
+              <li>{{ error.message }}</li>
+            }
+          </ul>
+        }
+      </hlm-field>
+
+      <!-- Password Field -->
+      <app-password-input
+        label="Enter Password"
+        [formField]="emailLoginForm.password"
+      ></app-password-input>
+
+      @if (!emailLoginForm.confirmPassword().hidden()) {
+        <app-password-input
+          placeholder="Confirm your password"
+          label="Confirm Password"
+          [formField]="emailLoginForm.confirmPassword"
+        ></app-password-input>
+      }
+
+      @if (authError()) {
+        <p class="text-destructive">{{ authError() }}</p>
+      }
+      <button type="submit" hlmBtn class="w-full mt-3" [disabled]="!emailLoginForm().valid()">
+        {{ mode() === 'login' ? 'Sign In' : 'Create Account' }}
+      </button>
+    </fieldset>
+  </div>
+</form>

@@ -1,0 +1,208 @@
+<form class="recipe-form space-y-8" (submit)="onSubmit($event)">
+  <section class="grid gap-6">
+    <hlm-field>
+      <label hlmFieldLabel for="title">Recipe Title</label>
+      <input
+        hlmInput
+        id="title"
+        type="text"
+        placeholder="Grandma's tomato soup"
+        [formField]="recipeForm.title"
+        autocomplete="off"
+      />
+      @if (recipeForm.title().invalid() && recipeForm.title().touched()) {
+        <hlm-field-error>
+          @for (error of recipeForm.title().errors(); track error) {
+            {{ error.message }}
+          }
+        </hlm-field-error>
+      }
+    </hlm-field>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+      <hlm-field>
+        <label hlmFieldLabel for="origin">Origin</label>
+        <input
+          hlmInput
+          id="origin"
+          type="text"
+          placeholder="Italy, Home, Mexican"
+          [formField]="recipeForm.origin"
+          autocomplete="off"
+        />
+        @if (recipeForm.origin().invalid() && recipeForm.origin().touched()) {
+          <hlm-field-error>
+            @for (error of recipeForm.origin().errors(); track error) {
+              {{ error.message }}
+            }
+          </hlm-field-error>
+        }
+      </hlm-field>
+
+      <hlm-field>
+        <label hlmFieldLabel for="diet-tags">Diet Tags</label>
+        <input
+          hlmInput
+          id="diet-tags"
+          type="text"
+          placeholder="vegan, gluten-free, low-carb"
+          [formField]="recipeForm.dietTagsText"
+          autocomplete="off"
+        />
+        <hlm-field-description
+          >Separate tags with commas, semicolons, or new lines.</hlm-field-description
+        >
+      </hlm-field>
+    </div>
+  </section>
+
+  <section class="grid gap-6 lg:grid-cols-2">
+    <hlm-field>
+      <label hlmFieldLabel for="servings">Servings</label>
+      <input hlmInput id="servings" type="number" step="1" [formField]="recipeForm.servings" />
+    </hlm-field>
+
+    <hlm-field>
+      <label hlmFieldLabel for="duration">Duration (minutes)</label>
+      <input
+        hlmInput
+        id="duration"
+        type="number"
+        step="5"
+        [formField]="recipeForm.durationMinutes"
+      />
+    </hlm-field>
+  </section>
+
+  <section class="grid gap-6 lg:grid-cols-2">
+    <hlm-field>
+      <label hlmFieldLabel>Difficulty</label>
+      <div class="grid gap-2 sm:grid-cols-3">
+        @for (level of DIFFICULTIES; track level) {
+          <label
+            class="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition hover:border-slate-400 cursor-pointer"
+          >
+            <input
+              type="radio"
+              name="difficulty"
+              [value]="level"
+              [checked]="recipeForm.difficulty().value() === level"
+              (change)="recipeForm.difficulty().value.set(level)"
+            />
+            <span class="capitalize">{{ level }}</span>
+          </label>
+        }
+      </div>
+    </hlm-field>
+
+    <hlm-field>
+      <label hlmFieldLabel for="spice-level">Spice Level</label>
+      <div class="flex items-center gap-4">
+        <input
+          type="range"
+          class="w-full"
+          id="spice-level"
+          step="1"
+          [formField]="recipeForm.spiceLevel"
+        />
+        <span class="text-sm text-slate-500 font-medium">{{
+          recipeForm.spiceLevel().value()
+        }}</span>
+      </div>
+    </hlm-field>
+  </section>
+
+  <section class="grid gap-6 lg:grid-cols-2">
+    <hlm-field>
+      <label hlmFieldLabel for="instructions">Instruction Steps</label>
+      <textarea
+        hlmTextarea
+        id="instructions"
+        rows="6"
+        placeholder="One instruction per line"
+        [formField]="recipeForm.instructionsText"
+      ></textarea>
+      <hlm-field-description
+        >Write each step on a separate line for easy parsing.</hlm-field-description
+      >
+      @if (recipeForm.instructionsText().invalid() && recipeForm.instructionsText().touched()) {
+        <hlm-field-error>
+          @for (error of recipeForm.instructionsText().errors(); track error) {
+            {{ error.message }}
+          }
+        </hlm-field-error>
+      }
+    </hlm-field>
+
+    <hlm-field>
+      <label hlmFieldLabel for="additional-info">Additional Information</label>
+      <textarea
+        hlmTextarea
+        id="additional-info"
+        rows="6"
+        placeholder="Tips, substitutions, servings notes"
+        [formField]="recipeForm.additionalInformationText"
+      ></textarea>
+      <hlm-field-description>Optional notes for the recipe.</hlm-field-description>
+    </hlm-field>
+  </section>
+
+  <section class="grid gap-6 lg:grid-cols-2">
+    <div class="rounded-xl border p-4">
+      <div class="mb-4 flex items-center justify-between gap-4">
+        <div>
+          <h2 class="text-base font-semibold">Nutrition</h2>
+          <p class="text-sm text-slate-500">Optional information</p>
+        </div>
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <hlm-field>
+          <label hlmFieldLabel for="calories">Calories</label>
+          <input hlmInput id="calories" type="number" [formField]="recipeForm.calories" />
+        </hlm-field>
+        <hlm-field>
+          <label hlmFieldLabel for="protein">Protein</label>
+          <input hlmInput id="protein" type="number" [formField]="recipeForm.protein" />
+        </hlm-field>
+        <hlm-field>
+          <label hlmFieldLabel for="carbs">Carbs</label>
+          <input hlmInput id="carbs" type="number" [formField]="recipeForm.carbs" />
+        </hlm-field>
+        <hlm-field>
+          <label hlmFieldLabel for="fat">Fat</label>
+          <input hlmInput id="fat" type="number" [formField]="recipeForm.fat" />
+        </hlm-field>
+      </div>
+    </div>
+
+    <hlm-field>
+      <label hlmFieldLabel for="is-public">Visibility</label>
+      <div class="flex items-center gap-3 mt-2">
+        <hlm-checkbox
+          id="is-public"
+          [checked]="recipeForm.isPublic().value()"
+          (change)="recipeForm.isPublic().value.set(recipeForm.isPublic().value() === false)"
+        />
+        <span class="text-sm text-slate-600">Make the recipe visible to others.</span>
+      </div>
+    </hlm-field>
+  </section>
+
+  <app-create-ingredients [(ingredients)]="ingredients" [(touched)]="ingredientsTouched">
+    <ng-container error>
+      @if (!ingredientsValid().valid && ingredientsTouched()) {
+        <p class="text-destructive text-sm font-medium">
+          {{ ingredientsValid().message }}
+        </p>
+      }
+    </ng-container>
+  </app-create-ingredients>
+
+  <button
+    type="submit"
+    class="hlm-btn w-full text-base py-3"
+    [disabled]="!recipeForm().valid() || !ingredientsValid()"
+  >
+    Save Recipe
+  </button>
+</form>
