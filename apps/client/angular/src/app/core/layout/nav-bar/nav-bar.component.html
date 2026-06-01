@@ -1,0 +1,69 @@
+<!-- Desktop Top Nav -->
+<nav class="hidden md:flex items-center justify-between border-b border-border bg-background px-6 h-14 mb-4">
+  <div class="flex items-center gap-8">
+    <a routerLink="/dashboard" class="text-lg font-bold text-foreground whitespace-nowrap">
+      CulinarAI
+    </a>
+    <nav hlmNavigationMenu>
+      <ul hlmNavigationMenuList>
+        @for (item of navItems; track item.route) {
+          <li hlmNavigationMenuItem>
+            <a hlmNavigationMenuLink [routerLink]="item.route" [active]="activeStates[item.route]()">
+              {{ item.label }}
+            </a>
+          </li>
+        }
+      </ul>
+    </nav>
+  </div>
+  <button hlmBtn variant="ghost" size="icon-lg" aria-label="Profile" [hlmDropdownMenuTrigger]="profileMenu">
+    <ng-icon name="profile" class="text-3xl" />
+  </button>
+</nav>
+
+<!-- Mobile Top Bar -->
+<div class="flex md:hidden items-center justify-between border-b border-border bg-background px-4 h-14 mb-4">
+  <a routerLink="/dashboard" class="text-lg font-bold text-foreground">
+    CulinarAI
+  </a>
+  <button hlmBtn variant="ghost" size="icon-lg" aria-label="Profile" [hlmDropdownMenuTrigger]="profileMenu">
+    <ng-icon name="profile" class="text-3xl" />
+  </button>
+</div>
+
+<!-- Mobile Bottom Nav -->
+<div class="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-border bg-background">
+  <div class="flex items-center justify-around h-16">
+    @for (item of navItems; track item.route) {
+      <a
+        [routerLink]="item.route"
+        class="flex flex-col items-center gap-0.5 px-3 py-1 text-xs transition-colors"
+        [class.text-primary]="activeStates[item.route]()"
+        [class.text-muted-foreground]="!activeStates[item.route]()"
+      >
+        <ng-icon hlm [name]="item.icon" />
+        <span>{{ item.label }}</span>
+      </a>
+    }
+  </div>
+</div>
+
+<ng-template #profileMenu>
+  <hlm-dropdown-menu class="w-56">
+    <hlm-dropdown-menu-label class="font-semibold">My Account</hlm-dropdown-menu-label>
+    <hlm-dropdown-menu-separator />
+    <button hlmDropdownMenuItem (triggered)="profile()">
+      <ng-icon name="profile" class="text-xl" />
+      <span>View Profile</span>
+    </button>
+    <button hlmDropdownMenuItem (triggered)="settings()">
+      <ng-icon name="cog" class="text-xl" />
+      <span>Settings</span>
+    </button>
+    <hlm-dropdown-menu-separator />
+    <button hlmDropdownMenuItem variant="destructive" (triggered)="logout()">
+      <ng-icon name="logOut" class="text-xl" />
+      <span>Logout</span>
+    </button>
+  </hlm-dropdown-menu>
+</ng-template>

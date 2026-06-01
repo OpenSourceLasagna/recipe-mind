@@ -1,4 +1,4 @@
-import { Component, effect, inject, signal, viewChild } from '@angular/core';
+import { Component, effect, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { CreationMethodBoxComponent } from "../components/creation-method-box/creation-method-box.component";
 import { NgIcon, provideIcons } from "@ng-icons/core";
 import { heroDocumentText, heroLink, heroPhoto } from '@ng-icons/heroicons/outline';
@@ -26,9 +26,11 @@ export class RecipeCreationComponent {
   readonly rawTextInput = signal<string>('');
   readonly editorForm = viewChild<RecipeCreationFormComponent>('recipeEditor')
   readonly #recipeService = inject(RecipeService)
+  readonly formCard = viewChild<ElementRef>('formCard')
 
   setActiveMethod(method: CreationMethod) {
     this.activeMethod.set(method);
+    this.formCard()?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   submitCurrentMode(event: Event) {
