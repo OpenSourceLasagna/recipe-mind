@@ -25,3 +25,8 @@ dependencies = [
     "nltk>=3.9.4",
     "scikit-learn>=1.6.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["src/tests"]
+asyncio_mode = "auto"
+pythonpath = ["src"]
