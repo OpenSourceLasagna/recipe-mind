@@ -6,17 +6,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi import Request
 from fastapi import HTTPException
-from postgrest import CountMethod
-from supabase import create_client
 from supabase.client import PostgrestAPIError
-from openai import OpenAI
+import nltk
+from dotenv import load_dotenv
 
-from src.dependencies.services import Services
-
+from src import models # pyright: ignore[reportUnusedImport]
+from src.dependencies.clients import OpenAIClient, SupabaseClient, initialize_global_clients
 from src.routers import recipe_management, recipe_search, users
 from src.core.config import get_settings
-from src.schemas.app_services import AppServices
 from src.schemas.health_check import HealthCheckResponse
+
+load_dotenv(override=True)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -32,11 +32,10 @@ async def lifespan(app: FastAPI):
     """Initialize critical services on startup and perform cleanup on shutdown."""
     logger.info("Starting Recipe Mind API...")
     try:
-        supabase = create_client(settings.supabase_url, settings.supabase_key)
-        openai_client = None # OpenAI(api_key=settings.openai_api_key)
-        # openai_client.models.list()
-        app.state.services = AppServices(supabase_client=supabase, openai_client=openai_client) 
+        initialize_global_clients()
         logger.info("Services initialized successfully")
+        nltk.download('wordnet') # type: ignore    
+        logger.info('nltk Wordnet initalized successfully')
     except Exception as e:
         logger.error(f"Startup failed: {e}")
         raise
@@ -61,21 +60,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(users.router)
-app.include_router(recipe_management.router)
-app.include_router(recipe_search.router)
+app.include_router(users.router_v1)
+app.include_router(recipe_management.router_v1)
+app.include_router(recipe_search.router_v1)
 
 
 @app.get("/health", response_model=HealthCheckResponse)
-async def health_check(services: Services):
+async def health_check(supabase_client: SupabaseClient, openai_client: OpenAIClient):
     """Perform health checks on critical services."""
     supabase_status = "healthy"
     openai_status = "healthy"
 
     try:
-        if not hasattr(services, "supabase_client"):
+        if supabase_client is None: # type: ignore
             supabase_status = "disconnected"
-        services.supabase_client.postgrest.from_table("recipes").select("*").limit(1).execute()
+        supabase_client.postgrest.from_table("recipes").select("*").limit(1).execute()
     except PostgrestAPIError as e:
         permission_denied_code = "42501"
         if not e.code == permission_denied_code:
@@ -86,10 +85,10 @@ async def health_check(services: Services):
         supabase_status = "unhealthy"
 
     try:
-        if not hasattr(services, "openai_client"):
+        if openai_client is None: # type: ignore
             openai_status = "disconnected"
         else:
-            services.openai_client.models.list()
+            openai_client.models.list()
     except Exception as e:
         logger.warning(f"OpenAI health check failed: {e}")
         openai_status = "unhealthy"

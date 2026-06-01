@@ -1,11 +1,17 @@
 from datetime import UTC, datetime
 from functools import partial
 from uuid import UUID, uuid4
-from typing import Any
-from sqlmodel import Index, SQLModel, Field, Column, text
+from typing import TYPE_CHECKING, Any
+from sqlmodel import DateTime, Index, Relationship, SQLModel, Field, Column, text
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, TEXT
 from sqlalchemy import CheckConstraint
-from pgvector.sqlalchemy import VECTOR  # type: ignore
+from pgvector.sqlalchemy import VECTOR # type: ignore
+
+from src.core.config import settings
+
+
+if TYPE_CHECKING:
+    from src.models.recipe_ingredient import RecipeIngredient 
 
 class Recipe(SQLModel, table=True):
     __tablename__ = "recipes" # type: ignore
@@ -61,15 +67,25 @@ class Recipe(SQLModel, table=True):
     is_public: bool = Field(default=False, sa_column_kwargs={"server_default": "false"})
 
    
-    embedding: Any = Field(default=None, sa_type=VECTOR(1536)) # type: ignore
+    embedding: Any = Field(default=None, sa_type=VECTOR(settings.embedding_size)) # type: ignore
 
     raw_source: str | None = Field(default=None)
     
     created_at: datetime = Field(
         default_factory=partial(datetime.now, UTC),
-        sa_column_kwargs={"server_default": text("now()")}
+        sa_column=Column(DateTime(timezone=True), server_default=text("now()"))
     )
+
     updated_at: datetime = Field(
         default_factory=partial(datetime.now, UTC),
-        sa_column_kwargs={"server_default": text("now()"), "onupdate": text("now()")}
+        sa_column=Column(
+            DateTime(timezone=True), 
+            server_default=text("now()"), 
+            onupdate=text("now()")
+        )
+    )
+    
+    ingredients: list["RecipeIngredient"] = Relationship(
+        back_populates="recipe",
+        sa_relationship_kwargs={"lazy": "selectin"}
     )

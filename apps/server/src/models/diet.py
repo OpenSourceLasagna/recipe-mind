@@ -1,7 +1,7 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 from functools import partial
-from sqlmodel import SQLModel, Field, text
+from sqlmodel import Column, DateTime, ForeignKey, SQLModel, Field, text
 
 class DietTag(SQLModel, table=True):
     __tablename__ = "diet_tags" # pyright: ignore[reportAssignmentType]
@@ -13,10 +13,9 @@ class DietTag(SQLModel, table=True):
     )
 
     recipe_id: UUID = Field(
-        foreign_key="recipes.id",
         nullable=False,
         index=True,
-        sa_column_kwargs={"ondelete": "CASCADE"}
+        sa_column_args=[ForeignKey("recipes.id", ondelete="CASCADE")]
     )
 
     tag_name: str = Field(
@@ -25,6 +24,6 @@ class DietTag(SQLModel, table=True):
     )
 
     created_at: datetime = Field(
-        default_factory=partial(datetime.now, timezone.utc),
-        sa_column_kwargs={"server_default": text("now()")}
+        default_factory=partial(datetime.now, UTC),
+        sa_column=Column(DateTime(timezone=True), server_default=text("now()"))
     )

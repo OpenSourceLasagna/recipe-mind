@@ -1,0 +1,11 @@
+.venv/
+venv/
+
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+.local/share/jupyter/
+
+__pycache__/
+*.pyc
+
+typings/

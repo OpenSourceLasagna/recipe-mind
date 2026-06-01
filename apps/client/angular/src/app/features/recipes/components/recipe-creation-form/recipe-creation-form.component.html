@@ -1,4 +1,4 @@
-<form class="recipe-form space-y-8" (submit)="onSubmit($event)">
+<form class="recipe-form space-y-8">
   <section class="grid gap-6">
     <hlm-field>
       <label hlmFieldLabel for="title">Recipe Title</label>
@@ -198,11 +198,11 @@
     </ng-container>
   </app-create-ingredients>
 
-  <button
-    type="submit"
-    class="hlm-btn w-full text-base py-3"
-    [disabled]="!recipeForm().valid() || !ingredientsValid()"
-  >
-    Save Recipe
-  </button>
+  @if (recipeForm().invalid() && recipeForm().touched()) {
+    <ul>
+      @for (error of recipeForm().errorSummary(); track error) {
+        <li class="text-destructive text-md font-medium">{{ error.message }}</li>
+      }
+    </ul>
+  }
 </form>

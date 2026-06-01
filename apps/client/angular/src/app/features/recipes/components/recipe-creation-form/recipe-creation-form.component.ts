@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, output, signal, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, output, signal, computed, effect } from '@angular/core';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmFieldImports } from '@spartan-ng/helm/field';
 import { HlmInputImports } from '@spartan-ng/helm/input';
@@ -8,7 +8,9 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { HlmLabelImports } from '@spartan-ng/helm/label';
 import { HlmCheckboxImports } from '@spartan-ng/helm/checkbox';
 import { CreateIngredientsComponent } from "../create-ingredients/create-ingredients.component";
-import { IngredientRow } from '../../models/ingredient-row';
+import { IngredientRow } from '../../models/ingredient-row.model';
+import { buildRecipeCreationSection, createRecipeCreationModel } from './recipe-creation-form.model';
+import { CreateIngredientRequest, CreateRecipeRequest } from '../../models/create-recipe.model';
 
 type Difficulty = 'easy' | 'medium' | 'hard';
 
@@ -29,20 +31,6 @@ interface RecipeCreationFormModel {
   fat: string;
 }
 
-export interface RecipeCreationPayload {
-  title: string;
-  additional_information: string[];
-  instruction_steps: string[];
-  nutrition: Record<string, number>;
-  servings: number;
-  duration_minutes: number;
-  difficulty: Difficulty;
-  spice_level: number;
-  origin: string;
-  is_public: boolean;
-  ingredients: IngredientRow[];
-  dietTags: string[];
-}
 
 @Component({
   selector: 'app-recipe-creation-form',
@@ -53,48 +41,12 @@ export interface RecipeCreationPayload {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecipeCreationFormComponent {
-  readonly #INITIAL_MODEL: RecipeCreationFormModel = {
-    title: '',
-    origin: 'Unknown',
-    servings: 4,
-    durationMinutes: 0,
-    difficulty: 'medium',
-    spiceLevel: 2,
-    isPublic: false,
-    instructionsText: '',
-    additionalInformationText: '',
-    dietTagsText: '',
-    calories: '',
-    protein: '',
-    carbs: '',
-    fat: '',
-  };
-
   readonly DIFFICULTIES: readonly Difficulty[] = ['easy', 'medium', 'hard'] as const;
-  ingredients = signal<IngredientRow[]>([{ ingredientName: '', quantity: 1, unit: '' }]);
+  ingredients = signal<CreateIngredientRequest[]>([{ ingredientName: '', quantity: 1, unit: '' }]);
   ingredientsTouched = signal<boolean>(false);
-  readonly submit = output<RecipeCreationPayload>();
+  readonly recipeSubmit = output<CreateRecipeRequest>();
 
-  recipeForm = form(
-    signal<RecipeCreationFormModel>({ ...this.#INITIAL_MODEL }),
-    (schema) => {
-      debounce(schema.title, 200);
-      debounce(schema.instructionsText, 200);
-      debounce(schema.additionalInformationText, 200);
-      debounce(schema.dietTagsText, 200);
-      debounce(schema.origin, 200);
-      required(schema.title, { message: 'Recipe title is required' });
-      minLength(schema.title, 3, { message: 'Title should be at least 3 characters' });
-      maxLength(schema.title, 120, { message: 'Title may not exceed 120 characters' });
-      required(schema.instructionsText, { message: 'Add at least one instruction step' });
-      maxLength(schema.instructionsText, 2000, { message: 'Instructions are too long' });
-      maxLength(schema.additionalInformationText, 600, { message: 'Additional information is too long' });
-      maxLength(schema.dietTagsText, 200, { message: 'Diet tags text is too long' });
-      maxLength(schema.origin, 60, { message: 'Origin may not exceed 60 characters' });
-      min(schema.spiceLevel, 1, { message: 'Spice level must be at least 1' });
-      max(schema.spiceLevel, 5, { message: 'Spice level may not exceed 5' });
-    }
-  );
+  recipeForm = form(createRecipeCreationModel(), buildRecipeCreationSection);
 
   readonly ingredientsValid = computed(() => {
     if (this.ingredients().length <= 1) {
@@ -145,7 +97,7 @@ export class RecipeCreationFormComponent {
       .filter((tag) => tag.length);
   }
 
-  public onSubmit(event: Event): void {
+  public submit(event: Event): void {
     event.preventDefault();
 
     if (!this.recipeForm().valid() || !this.ingredientsValid().valid) {
@@ -153,7 +105,7 @@ export class RecipeCreationFormComponent {
     }
 
     const instructions = this.splitLines(this.recipeForm.instructionsText().value());
-    const additional_information = this.splitLines(this.recipeForm.additionalInformationText().value());
+    const additionalInformation = this.splitLines(this.recipeForm.additionalInformationText().value());
     const dietTags = this.buildDietTags();
     const ingredients = this.ingredients()
       .filter((row) => row.ingredientName.trim().length > 0)
@@ -162,19 +114,19 @@ export class RecipeCreationFormComponent {
         quantity: Number(row.quantity) || 1,
         unit: row.unit.trim(),
       }));
-    this.submit.emit({
+    this.recipeSubmit.emit({
       title: this.recipeForm.title().value().trim(),
-      additional_information,
-      instruction_steps: instructions,
+      additionalInformation,
+      instructionSteps: instructions,
       nutrition: this.buildNutrition(),
       servings: this.recipeForm.servings().value(),
-      duration_minutes: this.recipeForm.durationMinutes().value(),
+      durationMinutes: this.recipeForm.durationMinutes().value(),
       difficulty: this.recipeForm.difficulty().value(),
-      spice_level: this.recipeForm.spiceLevel().value(),
+      spiceLevel: this.recipeForm.spiceLevel().value(),
       origin: this.recipeForm.origin().value().trim() || 'Unknown',
-      is_public: this.recipeForm.isPublic().value(),
+      isPublic: this.recipeForm.isPublic().value(),
       ingredients,
-      dietTags,
+      //TODO dietTags,
     });
   }
 }
