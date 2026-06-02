@@ -1,5 +1,5 @@
-import { Component, input, InputSignal, InputSignalWithTransform, model, ModelSignal, signal } from '@angular/core';
-import { FormField, FormValueControl, ValidationError } from '@angular/forms/signals';
+import { ChangeDetectionStrategy, Component, input, model, signal } from '@angular/core';
+import { FormValueControl, ValidationError } from '@angular/forms/signals';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { heroEye, heroEyeSlash } from '@ng-icons/heroicons/outline';
 import { HlmFieldImports } from '@spartan-ng/helm/field';
@@ -11,6 +11,7 @@ import { HlmInputGroupImports } from '@spartan-ng/helm/input-group';
   providers: [provideIcons({ eye: heroEye, eyeSlash: heroEyeSlash })],
   templateUrl: './password-input.component.html',
   styleUrl: './password-input.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PasswordInputComponent implements FormValueControl<string> {
   value = model('');

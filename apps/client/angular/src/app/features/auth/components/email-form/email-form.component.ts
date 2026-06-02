@@ -33,14 +33,11 @@ export class EmailFormComponent {
   readonly #INITIAL_MODEL: EmailFormModel = { email: '', password: '', showConfirmPassword: false, confirmPassword: '' };
   mode = input<LoginMode>('login');
   authError = input<string | null>(null);
-  readonly submit = output<Pick<EmailFormModel, 'email' | 'password'>>()
+  readonly submitForm = output<Pick<EmailFormModel, 'email' | 'password'>>()
 
   emailLoginForm = form(
     signal<EmailFormModel>({ ...this.#INITIAL_MODEL }),
     (schema) => {
-      debounce(schema.email, 1000),
-        debounce(schema.password, 1000),
-        debounce(schema.confirmPassword, 1000),
         required(schema.email, { message: 'Email is required' }),
         required(schema.password, { message: 'Password is required' }),
         minLength(schema.password, 8, { message: 'Password must be at least 8 characters' }),
@@ -78,7 +75,7 @@ export class EmailFormComponent {
       return;
     }
     const { email, password } = this.emailLoginForm().value();
-    this.submit.emit({ email, password });
+    this.submitForm.emit({ email, password });
   }
 
 

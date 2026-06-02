@@ -1,4 +1,4 @@
-import { Component, inject, type Signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, type Signal } from '@angular/core';
 import { isActive, Router, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { heroArrowLeftOnRectangle, heroBookmark, heroCog6Tooth, heroMagnifyingGlass, heroPlusCircle, heroSparkles, heroUserCircle } from '@ng-icons/heroicons/outline';
@@ -31,6 +31,7 @@ const matchOptions = { paths: 'exact', queryParams: 'ignored', fragment: 'ignore
   imports: [RouterLink, NgIcon, HlmNavigationMenuImports, HlmButton, HlmIcon, HlmDropdownMenuImports],
   providers: [provideIcons({ explore: heroMagnifyingGlass, aiChef: heroSparkles, addNew: heroPlusCircle, saved: heroBookmark, profile: heroUserCircle, cog: heroCog6Tooth, logOut: heroArrowLeftOnRectangle })],
   templateUrl: './nav-bar.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NavBarComponent {
   readonly #router = inject(Router);
@@ -62,7 +63,8 @@ export class NavBarComponent {
     try {
       await this.#authService.signOut();
       await this.#router.navigate([ROUTES.LOGIN]);
-    } catch {
+    } catch (e){
+      alert(JSON.stringify(e))
       // TODO: surface error to user via toast notification
     }
   }
