@@ -72,7 +72,7 @@ describe('EmailFormComponent', () => {
     component.emailLoginForm.showConfirmPassword().value.set(false);
     vi.advanceTimersByTime(1500);
 
-    const spy = vi.spyOn(component.submit, 'emit');
+    const spy = vi.spyOn(component.submitForm, 'emit');
     component.onSubmit(new Event('submit'));
 
     expect(spy).toHaveBeenCalledWith({ email: 'a@b.com', password: '12345678' });
@@ -85,7 +85,7 @@ describe('EmailFormComponent', () => {
     component.emailLoginForm.password().value.set('');
     vi.advanceTimersByTime(1500);
 
-    const spy = vi.spyOn(component.submit, 'emit');
+    const spy = vi.spyOn(component.submitForm, 'emit');
     component.onSubmit(new Event('submit'));
 
     expect(spy).not.toHaveBeenCalled();

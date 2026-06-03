@@ -28,3 +28,8 @@ class IngredientCategoryRepository:
         stmt = select(IngredientCategory).where(IngredientCategory.category_name == name)
         result = await self.a_session.exec(stmt)
         return result.one_or_none()
+
+    async def get_by_names(self, names: list[str]) -> list[IngredientCategory]:
+        stmt = select(IngredientCategory).where(IngredientCategory.category_name.in_(names)) # type: ignore
+        result = await self.a_session.exec(stmt)
+        return list(result.all())

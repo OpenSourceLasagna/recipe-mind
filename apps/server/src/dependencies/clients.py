@@ -15,6 +15,7 @@ def initialize_global_clients():
     settings = get_settings()
     
     supabase_client = create_client(settings.supabase_url, settings.supabase_key)
+    
     openai_client = OpenAI(api_key=settings.openai_api_key)
 
 

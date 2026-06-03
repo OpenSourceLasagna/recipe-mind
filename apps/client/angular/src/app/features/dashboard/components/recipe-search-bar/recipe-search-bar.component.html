@@ -1,0 +1,27 @@
+<hlm-field>
+  <hlm-button-group>
+    <input
+      hlmInput
+      class="w-full"
+      [formField]="queryForm.query"
+      (keydown.enter)="submit($event)"
+      (keydown.escape)="clear($event)"
+      placeholder="Search recipes..."
+    />
+    @if (showClear()) {
+      <button hlmBtn variant="ghost" size="icon" type="button" (click)="clear($event)">
+        <ng-icon hlm name="heroXMark" />
+      </button>
+    }
+    <button
+      hlmBtn
+      variant="default"
+      size="icon"
+      type="button"
+      class="w-fit px-3"
+      (click)="submit($event)"
+    >
+      <ng-icon hlmIcon name="heroMagnifyingGlass" />
+    </button>
+  </hlm-button-group>
+</hlm-field>

@@ -1,0 +1,87 @@
+<div class="flex flex-wrap items-center gap-2">
+  <hlm-popover>
+    <button hlmBtn variant="outline" size="sm" hlmPopoverTrigger
+      [class.bg-primary]="filter.model().difficulty"
+      [class.text-primary-foreground]="filter.model().difficulty"
+    >
+      Difficulty
+      <ng-icon hlm size="sm" name="heroChevronDown" class="ml-1" />
+    </button>
+    <hlm-popover-content *hlmPopoverPortal class="max-w-fit">
+      <app-filter-difficulty [formField]="filter.form.difficulty" />
+    </hlm-popover-content>
+  </hlm-popover>
+
+  <hlm-popover>
+    <button hlmBtn variant="outline" size="sm" hlmPopoverTrigger
+      [class.bg-primary]="filter.model().spiceMax"
+      [class.text-primary-foreground]="filter.model().spiceMax"
+    >
+      Spice
+      <ng-icon hlm size="sm" name="heroChevronDown" class="ml-1" />
+    </button>
+    <hlm-popover-content *hlmPopoverPortal class="max-w-fit">
+      <div class="flex flex-col gap-2">
+        <label class="text-xs text-muted-foreground">Spice Level</label>
+        <app-filter-spice-rating [formField]="filter.form.spiceMax" />
+      </div>
+    </hlm-popover-content>
+  </hlm-popover>
+
+  <hlm-popover>
+    <button hlmBtn variant="outline" size="sm" hlmPopoverTrigger
+      [class.bg-primary]="filter.model().duration[0] > durationRange[0] || filter.model().duration[1] < durationRange[1]"
+      [class.text-primary-foreground]="filter.model().duration[0] > durationRange[0] || filter.model().duration[1] < durationRange[1]"
+    >
+      Duration
+      <ng-icon hlm size="sm" name="heroChevronDown" class="ml-1" />
+    </button>
+    <hlm-popover-content *hlmPopoverPortal>
+      <app-filter-slider-range [formField]="filter.form.duration"
+        [sliderMin]="durationRange[0]" [sliderMax]="durationRange[1]" [step]="5" unit="min" label="Duration" />
+    </hlm-popover-content>
+  </hlm-popover>
+
+  <hlm-popover>
+    <button hlmBtn variant="outline" size="sm" hlmPopoverTrigger
+      [class.bg-primary]="filter.model().servings[0] > servingsRange[0] || filter.model().servings[1] < servingsRange[1]"
+      [class.text-primary-foreground]="filter.model().servings[0] > servingsRange[0] || filter.model().servings[1] < servingsRange[1]"
+    >
+      Servings
+      <ng-icon hlm size="sm" name="heroChevronDown" class="ml-1" />
+    </button>
+    <hlm-popover-content *hlmPopoverPortal>
+      <app-filter-slider-range [formField]="filter.form.servings"
+        [sliderMin]="servingsRange[0]" [sliderMax]="servingsRange[1]" [step]="1" label="Servings" />
+    </hlm-popover-content>
+  </hlm-popover>
+
+  <hlm-popover>
+    <button hlmBtn variant="outline" size="sm" hlmPopoverTrigger
+      [class.bg-primary]="filter.model().origin"
+      [class.text-primary-foreground]="filter.model().origin"
+    >
+      Origin
+      <ng-icon hlm size="sm" name="heroChevronDown" class="ml-1" />
+    </button>
+    <hlm-popover-content *hlmPopoverPortal>
+      <app-filter-origin [formField]="filter.form.origin" />
+    </hlm-popover-content>
+  </hlm-popover>
+
+  <hlm-popover>
+    <button hlmBtn variant="outline" size="sm" hlmPopoverTrigger
+      [class.bg-primary]="filter.model().categories"
+      [class.text-primary-foreground]="filter.model().categories"
+    >
+      Categories
+      <ng-icon hlm size="sm" name="heroChevronDown" class="ml-1" />
+    </button>
+    <hlm-popover-content *hlmPopoverPortal>
+      <app-filter-categories [formField]="filter.form.categories" />
+    </hlm-popover-content>
+  </hlm-popover>
+
+  <app-filter-sort [value]="filter.sortValue()" (valueChange)="filter.setSortValue($event)" />
+ 
+</div>

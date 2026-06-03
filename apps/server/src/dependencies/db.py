@@ -5,6 +5,7 @@ from sqlalchemy import text
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.database.repositories.ingredients_categories_repository import IngredientCategoryRepository
+from src.database.repositories.query_cache_repository import QueryCacheRepository
 from src.database.repositories.recipe_ingredients_repository import RecipeIngredientRepository
 from src.database.repositories.recipe_repository import RecipeRepository
 
@@ -32,7 +33,11 @@ async def get_recipe_ingredient_repository(db: AsyncSession = Depends(get_db_ses
 async def get_ingredient_category_repository(db: AsyncSession = Depends(get_db_session)) -> IngredientCategoryRepository:
     return IngredientCategoryRepository(a_session=db)
 
+async def get_query_cache_repository(db: AsyncSession = Depends(get_db_session)) -> QueryCacheRepository:
+    return QueryCacheRepository(a_session=db)
+
 Database = Annotated[AsyncSessionLocal, Depends(get_db_session)]
 RecipeRepo = Annotated[RecipeRepository, Depends(get_recipe_repository)]
 RecipeIngredientRepo = Annotated[RecipeIngredientRepository, Depends(get_recipe_ingredient_repository)]
 IngredientCategoryRepo = Annotated[IngredientCategoryRepository, Depends(get_ingredient_category_repository)]
+QueryCacheRepo = Annotated[QueryCacheRepository, Depends(get_query_cache_repository)]

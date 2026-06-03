@@ -324,8 +324,9 @@ def ingestion_service(
 def mock_settings() -> MagicMock:
     settings = MagicMock()
     settings.embedding_model_name = "text-embedding-3-small"
+    settings.local_model_path = "./models"
     settings.local_embedding_model_name = "nomic-ai/nomic-embed-text-v1.5"
-    settings.local_embedding_model_path = "./models/nomic-embed-text-v1.5"
+    settings.reranking_model_name = "cross-encoder/ms-marco-MiniLM-L-6-v2"
     return settings
 
 

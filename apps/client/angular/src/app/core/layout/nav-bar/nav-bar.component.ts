@@ -31,7 +31,7 @@ const matchOptions = { paths: 'exact', queryParams: 'ignored', fragment: 'ignore
   imports: [RouterLink, NgIcon, HlmNavigationMenuImports, HlmButton, HlmIcon, HlmDropdownMenuImports],
   providers: [provideIcons({ explore: heroMagnifyingGlass, aiChef: heroSparkles, addNew: heroPlusCircle, saved: heroBookmark, profile: heroUserCircle, cog: heroCog6Tooth, logOut: heroArrowLeftOnRectangle })],
   templateUrl: './nav-bar.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class NavBarComponent {
   readonly #router = inject(Router);

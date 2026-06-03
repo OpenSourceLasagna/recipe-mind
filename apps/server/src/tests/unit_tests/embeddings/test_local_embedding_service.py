@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -7,11 +8,13 @@ from src.services.embeddings.local_embedding_service import LocalEmbeddingServic
 
 class TestLocalEmbeddingService:
     @patch("src.services.embeddings.local_embedding_service.SentenceTransformer")
-    @patch("src.services.embeddings.local_embedding_service.Path.exists")
+    @patch(
+        "src.services.embeddings.local_embedding_service.get_save_sentence_transformer_path"
+    )
     def test_embed_returns_list_of_floats(
-        self, mock_exists, mock_st_cls, mock_settings
+        self, mock_get_path, mock_st_cls, mock_settings
     ):
-        mock_exists.return_value = True
+        mock_get_path.return_value = Path("/fake/models/nomic-embed-text-v1.5")
         mock_st = MagicMock()
         mock_st.encode.return_value = np.array([0.1, 0.2, 0.3])
         mock_st_cls.return_value = mock_st
@@ -24,11 +27,13 @@ class TestLocalEmbeddingService:
         assert result == [0.1, 0.2, 0.3]
 
     @patch("src.services.embeddings.local_embedding_service.SentenceTransformer")
-    @patch("src.services.embeddings.local_embedding_service.Path.exists")
+    @patch(
+        "src.services.embeddings.local_embedding_service.get_save_sentence_transformer_path"
+    )
     def test_embed_many_returns_list_of_lists(
-        self, mock_exists, mock_st_cls, mock_settings
+        self, mock_get_path, mock_st_cls, mock_settings
     ):
-        mock_exists.return_value = True
+        mock_get_path.return_value = Path("/fake/models/nomic-embed-text-v1.5")
         mock_st = MagicMock()
         mock_st.encode.return_value = np.array([[0.1, 0.2], [0.3, 0.4]])
         mock_st_cls.return_value = mock_st
@@ -41,11 +46,13 @@ class TestLocalEmbeddingService:
         assert result == [[0.1, 0.2], [0.3, 0.4]]
 
     @patch("src.services.embeddings.local_embedding_service.SentenceTransformer")
-    @patch("src.services.embeddings.local_embedding_service.Path.exists")
+    @patch(
+        "src.services.embeddings.local_embedding_service.get_save_sentence_transformer_path"
+    )
     def test_embed_normalizes_embeddings(
-        self, mock_exists, mock_st_cls, mock_settings
+        self, mock_get_path, mock_st_cls, mock_settings
     ):
-        mock_exists.return_value = True
+        mock_get_path.return_value = Path("/fake/models/nomic-embed-text-v1.5")
         mock_st = MagicMock()
         mock_st.encode.return_value = np.array([3.0, 4.0])
         mock_st_cls.return_value = mock_st
@@ -57,28 +64,21 @@ class TestLocalEmbeddingService:
         assert call_kwargs.get("normalize_embeddings") is True
 
     @patch("src.services.embeddings.local_embedding_service.SentenceTransformer")
-    @patch("src.services.embeddings.local_embedding_service.Path.exists")
-    def test_model_downloaded_when_path_not_exists(
-        self, mock_exists, mock_st_cls, mock_settings
+    @patch(
+        "src.services.embeddings.local_embedding_service.get_save_sentence_transformer_path"
+    )
+    def test_uses_get_save_model_path(
+        self, mock_get_path, mock_st_cls, mock_settings
     ):
-        mock_exists.return_value = False
+        expected_path = Path("/fake/models/nomic-embed-text-v1.5")
+        mock_get_path.return_value = expected_path
         mock_st = MagicMock()
         mock_st_cls.return_value = mock_st
 
         LocalEmbeddingService(settings=mock_settings)
 
-        mock_st.save.assert_called_once()
-        mock_st_cls.assert_called()
-
-    @patch("src.services.embeddings.local_embedding_service.SentenceTransformer")
-    @patch("src.services.embeddings.local_embedding_service.Path.exists")
-    def test_model_loaded_from_local_when_path_exists(
-        self, mock_exists, mock_st_cls, mock_settings
-    ):
-        mock_exists.return_value = True
-        mock_st = MagicMock()
-        mock_st_cls.return_value = mock_st
-
-        LocalEmbeddingService(settings=mock_settings)
-
-        mock_st.save.assert_not_called()
+        mock_get_path.assert_called_once_with(
+            base_path=mock_settings.local_model_path,
+            model_name=mock_settings.local_embedding_model_name,
+        )
+        mock_st_cls.assert_called_once_with(str(expected_path), device="cpu")
