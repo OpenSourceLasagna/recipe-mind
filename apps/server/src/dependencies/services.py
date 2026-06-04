@@ -12,7 +12,7 @@ from src.services.embeddings.embedding_service import EmbeddingService
 from src.services.embeddings.local_embedding_service import LocalEmbeddingService
 from src.services.normalization_service import NormalizationService
 from src.services.recipe_ingestion_service import RecipeIngestionService
-from src.services.recipe_preprocessor_service import RecipePreprocessorService
+from src.services.recipe_serializer import RecipeSerializerService
 from src.services.search.hybrid_search_service import HybridSearchService
 from src.dependencies.db import QueryCacheRepo
 from src.services.search.reranking_service import RerankingService
@@ -33,7 +33,10 @@ _local_embedding_service: BaseEmbeddingService | None = None
 def get_local_embedding_service(settings: EnvSettings) -> BaseEmbeddingService:
     global _local_embedding_service
     if _local_embedding_service is None:
-        _local_embedding_service = LocalEmbeddingService(settings=settings)
+        _local_embedding_service = LocalEmbeddingService(
+            base_path=settings.local_model_path,
+            model_name=settings.local_embedding_model_name
+        )
     return _local_embedding_service
 
 
@@ -44,12 +47,12 @@ def get_normalization_service() -> NormalizationService:
     return NormalizationService()
 
 
-def get_recipe_preprocessor_service() -> RecipePreprocessorService:
-    return RecipePreprocessorService()
+def get_recipe_serializer_service() -> RecipeSerializerService:
+    return RecipeSerializerService()
 
 
-RecipePreprocessor = Annotated[
-    RecipePreprocessorService, Depends(get_recipe_preprocessor_service)
+RecipeSerializer = Annotated[
+    RecipeSerializerService, Depends(get_recipe_serializer_service)
 ]
 
 
@@ -73,7 +76,7 @@ def get_recipe_ingestion_service(
     recipe_repository: RecipeRepo,
     embedder: Embedder,
     local_embedder: LocalEmbedder,
-    preprocessor: RecipePreprocessor,
+    preprocessor: RecipeSerializer,
     category_matcher: CategoryMatcher,
 ) -> RecipeIngestionService:
     return RecipeIngestionService(
@@ -95,7 +98,7 @@ _reranking_service: RerankingService | None = None
 
 
 def get_reranking_service(
-    recipe_preprocessor: RecipePreprocessor, settings: EnvSettings
+    recipe_preprocessor: RecipeSerializer, settings: EnvSettings
 ) -> RerankingService:
     global _reranking_service
     if _reranking_service is None:

@@ -6,7 +6,7 @@ from uuid import uuid4
 import pytest
 
 from src.models.recipe import Recipe
-from src.services.recipe_preprocessor_service import RecipePreprocessorService
+from src.services.recipe_serializer import RecipeSerializerService
 from src.services.search.reranking_service import RerankingService
 from src.services.search.types import ScoredRecipe
 
@@ -42,7 +42,7 @@ def _make_scored_recipe(**overrides) -> ScoredRecipe:
 
 @pytest.fixture
 def mock_preprocessor() -> MagicMock:
-    preprocessor = MagicMock(spec=RecipePreprocessorService)
+    preprocessor = MagicMock(spec=RecipeSerializerService)
     preprocessor.to_markdown = MagicMock(return_value="markdown")
     return preprocessor
 
@@ -63,7 +63,6 @@ class TestRerankingService:
         service = RerankingService(
             recipe_preprocessor=mock_preprocessor,
             below_best_match_threshold=4.0,
-            general_acceptance_threshold=-7.0,
         )
         result = service.rerank([], "query")
         assert result == []
@@ -83,7 +82,6 @@ class TestRerankingService:
         service = RerankingService(
             recipe_preprocessor=mock_preprocessor,
             below_best_match_threshold=4.0,
-            general_acceptance_threshold=-7.0,
         )
         result = service.rerank(scored, "query")
 
@@ -92,27 +90,6 @@ class TestRerankingService:
         assert len(result) == 2
         assert result[0].title == "A"
         assert result[1].title == "B"
-
-    def test_rerank_filters_below_acceptance_threshold(self, mock_preprocessor):
-        r1 = _make_recipe(title="A")
-        r2 = _make_recipe(title="B")
-        scored = [_make_scored_recipe(recipe=r1), _make_scored_recipe(recipe=r2)]
-
-        self.mock_model.rank = MagicMock(
-            return_value=[
-                {"corpus_id": 0, "score": -10.0},
-                {"corpus_id": 1, "score": -8.0},
-            ]
-        )
-
-        service = RerankingService(
-            recipe_preprocessor=mock_preprocessor,
-            below_best_match_threshold=4.0,
-            general_acceptance_threshold=-7.0,
-        )
-        result = service.rerank(scored, "query")
-
-        assert result == []
 
     def test_rerank_filters_below_best_match_gap(self, mock_preprocessor):
         r1 = _make_recipe(title="A")
@@ -135,7 +112,7 @@ class TestRerankingService:
         service = RerankingService(
             recipe_preprocessor=mock_preprocessor,
             below_best_match_threshold=4.0,
-            general_acceptance_threshold=-7.0,
+            
         )
         result = service.rerank(scored, "query")
 
@@ -164,7 +141,6 @@ class TestRerankingService:
         service = RerankingService(
             recipe_preprocessor=mock_preprocessor,
             below_best_match_threshold=2.0,
-            general_acceptance_threshold=-7.0,
         )
         result = service.rerank(scored, "query")
 
@@ -189,7 +165,6 @@ class TestRerankingService:
         service = RerankingService(
             recipe_preprocessor=mock_preprocessor,
             below_best_match_threshold=4.0,
-            general_acceptance_threshold=-10.0,
         )
         result = service.rerank(scored, "query")
 
@@ -208,7 +183,7 @@ class TestRerankingService:
         service = RerankingService(
             recipe_preprocessor=mock_preprocessor,
             below_best_match_threshold=4.0,
-            general_acceptance_threshold=-7.0,
+            
         )
         result = service.rerank(scored, "query")
 

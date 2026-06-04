@@ -3,7 +3,7 @@ from functools import partial
 from typing import Any
 from uuid import UUID, uuid4
 
-from pgvector.sqlalchemy import VECTOR
+from pgvector.sqlalchemy import VECTOR # type: ignore
 from sqlalchemy.dialects.postgresql import TEXT
 from sqlalchemy import Column, text
 from sqlmodel import DateTime, Field, SQLModel

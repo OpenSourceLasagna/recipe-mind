@@ -1,12 +1,12 @@
 import pytest
 
-from src.services.recipe_preprocessor_service import RecipePreprocessorService
+from src.services.recipe_serializer import RecipeSerializerService
 
 
 class TestRecipePreprocessorService:
     @pytest.fixture
-    def service(self) -> RecipePreprocessorService:
-        return RecipePreprocessorService()
+    def service(self) -> RecipeSerializerService:
+        return RecipeSerializerService()
 
     def test_to_markdown_full_recipe(self, service, make_recipe):
         recipe = make_recipe()

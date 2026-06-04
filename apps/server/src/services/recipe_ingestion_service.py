@@ -4,7 +4,7 @@ from src.models.recipe import Recipe
 from src.models.recipe_ingredient import RecipeIngredient
 from src.services.category_matching_service import CategoryMatchingService
 from src.services.embeddings.base_embedding_service import BaseEmbeddingService
-from src.services.recipe_preprocessor_service import RecipePreprocessorService
+from src.services.recipe_serializer import RecipeSerializerService
 from fastapi import BackgroundTasks
 
 class RecipeIngestionService:
@@ -13,7 +13,7 @@ class RecipeIngestionService:
         repo: RecipeRepository,
         embedder: BaseEmbeddingService,
         small_embedder: BaseEmbeddingService,
-        preprocessor: RecipePreprocessorService,
+        preprocessor: RecipeSerializerService,
         category_matcher: CategoryMatchingService,
         normalizer: NormalizationService
     ):
@@ -25,10 +25,11 @@ class RecipeIngestionService:
         self.normalizer = normalizer
 
     async def execute(self, recipe: Recipe, background_tasks: BackgroundTasks) -> Recipe:
-        md_text = self.preprocessor.to_markdown(recipe)
-        recipe.embedding = self.embedder.embed(md_text)
         recipe.ingredients = self._normalize_ingredients(recipe.ingredients)
         recipe.ingredients = self._embed_ingredients(recipe.ingredients)
+
+        md_text = self.preprocessor.to_vector_markdown(recipe)
+        recipe.embedding = self.embedder.embed(md_text)
         saved_recipe = await self.repo.create(recipe)
 
         background_tasks.add_task(self.ingredient_category_matcher.categorize_uncategorized_ingredients)

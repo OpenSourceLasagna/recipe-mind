@@ -24,7 +24,7 @@ from src.services.embeddings.base_embedding_service import BaseEmbeddingService
 from src.services.embeddings.embedding_service import EmbeddingService
 from src.services.normalization_service import NormalizationService
 from src.services.recipe_ingestion_service import RecipeIngestionService
-from src.services.recipe_preprocessor_service import RecipePreprocessorService
+from src.services.recipe_serializer import RecipeSerializerService
 
 
 # ------------------------------------------------------------------ #
@@ -239,8 +239,8 @@ def mock_normalizer() -> MagicMock:
 
 
 @pytest.fixture
-def preprocessor() -> RecipePreprocessorService:
-    return RecipePreprocessorService()
+def preprocessor() -> RecipeSerializerService:
+    return RecipeSerializerService()
 
 
 # ------------------------------------------------------------------ #
@@ -301,7 +301,7 @@ def ingestion_service(
     recipe_repo: RecipeRepository,
     mock_embedder: MagicMock,
     mock_small_embedder: MagicMock,
-    preprocessor: RecipePreprocessorService,
+    preprocessor: RecipeSerializerService,
     category_matcher: CategoryMatchingService,
     mock_normalizer: MagicMock,
 ) -> RecipeIngestionService:
