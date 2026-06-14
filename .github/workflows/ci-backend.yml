@@ -1,0 +1,35 @@
+name: CI - Backend
+
+on:
+  pull_request:
+    branches: [main]
+    paths: [apps/server/**]
+  push:
+    branches: [main]
+    paths: [apps/server/**]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/server
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: '3.13'
+          enable-cache: true
+          cache-dependency-glob: apps/server/uv.lock
+
+      - run: uv sync
+
+      - run: uv run ruff check src/
+
+      - run: uv run ruff format --check src/
+
+      - run: uv run pytest src/tests/unit_tests/
+
+      - run: uv run pip-audit
