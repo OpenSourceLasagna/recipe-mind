@@ -37,7 +37,10 @@ class TestIngredientCategoryRepository:
     async def test_get_all_returns_all_categories(
         self, category_repo, mock_session, make_category
     ):
-        expected = [make_category(category_name="Vegetables"), make_category(category_name="Fruits")]
+        expected = [
+            make_category(category_name="Vegetables"),
+            make_category(category_name="Fruits"),
+        ]
         mock_session.exec.return_value.all.return_value = expected
 
         result = await category_repo.get_all()
@@ -52,9 +55,7 @@ class TestIngredientCategoryRepository:
 
         assert result == []
 
-    async def test_get_by_name_found(
-        self, category_repo, mock_session, make_category
-    ):
+    async def test_get_by_name_found(self, category_repo, mock_session, make_category):
         expected = make_category(category_name="Vegetables")
         mock_session.exec.return_value.one_or_none.return_value = expected
 

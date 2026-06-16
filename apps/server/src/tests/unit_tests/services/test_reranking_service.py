@@ -50,11 +50,14 @@ def mock_preprocessor() -> MagicMock:
 class TestRerankingService:
     @pytest.fixture(autouse=True)
     def _patch_cross_encoder_and_path(self):
-        with patch(
-            "src.services.search.reranking_service.get_save_cross_encoder_path"
-        ) as mock_get_path, patch(
-            "src.services.search.reranking_service.CrossEncoder", autospec=True
-        ) as MockCE:
+        with (
+            patch(
+                "src.services.search.reranking_service.get_save_cross_encoder_path"
+            ) as mock_get_path,
+            patch(
+                "src.services.search.reranking_service.CrossEncoder", autospec=True
+            ) as MockCE,
+        ):
             mock_get_path.return_value = Path("/fake/models/cross-encoder")
             self.mock_model = MockCE.return_value
             yield
@@ -112,7 +115,6 @@ class TestRerankingService:
         service = RerankingService(
             recipe_preprocessor=mock_preprocessor,
             below_best_match_threshold=4.0,
-            
         )
         result = service.rerank(scored, "query")
 
@@ -176,14 +178,11 @@ class TestRerankingService:
         r1 = _make_recipe(title="A")
         scored = [_make_scored_recipe(recipe=r1)]
 
-        self.mock_model.rank = MagicMock(
-            return_value=[{"corpus_id": 0, "score": 5.0}]
-        )
+        self.mock_model.rank = MagicMock(return_value=[{"corpus_id": 0, "score": 5.0}])
 
         service = RerankingService(
             recipe_preprocessor=mock_preprocessor,
             below_best_match_threshold=4.0,
-            
         )
         result = service.rerank(scored, "query")
 

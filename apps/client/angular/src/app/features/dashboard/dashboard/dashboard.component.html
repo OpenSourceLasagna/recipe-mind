@@ -1,67 +1,89 @@
-<div class="p-4">
-  <div class="flex items-center justify-between mb-3">
-    <h1 class="text-xl font-semibold">Explore Recipes</h1>
-    <app-recipe-filter-sheet side="bottom" class="md:hidden">
-      <ng-container sheetTriggerButtonContent>
-        <ng-icon hlm size="sm" name="heroAdjustmentsHorizontal" class="mr-1.5" />
-        Filters
-        @if (filter.activeFilters().length; as count) {
-          <span
-            class="ml-1.5 inline-flex items-center justify-center size-5 rounded-full bg-primary text-primary-foreground text-xs font-medium"
-          >
-            {{ count }}
-          </span>
-        }
-      </ng-container>
-    </app-recipe-filter-sheet>
-  </div>
+<div class="lg:flex lg:h-[calc(100dvh-4.5rem)]">
+  <!-- Main content -->
+  <div class="flex-1 min-w-0 p-4 lg:overflow-y-auto">
+    <div class="flex items-center justify-between mb-3">
+      <h1 class="text-xl font-semibold">Explore Recipes</h1>
+      <div class="flex items-center gap-2">
+        <app-chat-button />
+        <app-recipe-filter-sheet side="bottom" class="md:hidden">
+          <ng-container sheetTriggerButtonContent>
+            <ng-icon hlm size="sm" name="heroAdjustmentsHorizontal" class="mr-1.5" />
+            Filters
+            @if (filter.activeFilters().length; as count) {
+              <span
+                class="ml-1.5 inline-flex items-center justify-center size-5 rounded-full bg-primary text-primary-foreground text-xs font-medium"
+              >
+                {{ count }}
+              </span>
+            }
+          </ng-container>
+        </app-recipe-filter-sheet>
+      </div>
+    </div>
 
-  <div class="w-full mb-4">
-    <app-recipe-search-bar />
-  </div>
+    <div class="w-full mb-4">
+      <app-recipe-search-bar />
+    </div>
 
-  <app-filter-bar class="hidden md:flex mb-4" />
+    <app-filter-bar class="hidden md:flex mb-4" />
 
-  @if (recipes.isLoading()) {
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      @for (_ of skeletonItems; track $index) {
-        <hlm-card class="w-full">
-          <hlm-card-header>
-            <div hlmSkeleton class="h-5 w-3/4"></div>
-            <div hlmSkeleton class="h-5 w-1/2 mt-2"></div>
-          </hlm-card-header>
-          <div hlmCardContent>
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <div hlmSkeleton class="h-5 w-14 rounded-full"></div>
-              <div hlmSkeleton class="h-4 w-16"></div>
-              <div hlmSkeleton class="h-4 w-14"></div>
-              <div class="flex gap-0.5">
-                @for (_ of [1, 2, 3, 4, 5]; track $index) {
-                  <div hlmSkeleton class="size-3.5"></div>
-                }
+    @if (recipes.isLoading()) {
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        @for (_ of skeletonItems; track $index) {
+          <hlm-card class="w-full">
+            <hlm-card-header>
+              <div hlmSkeleton class="h-5 w-3/4"></div>
+              <div hlmSkeleton class="h-5 w-1/2 mt-2"></div>
+            </hlm-card-header>
+            <div hlmCardContent>
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <div hlmSkeleton class="h-5 w-14 rounded-full"></div>
+                <div hlmSkeleton class="h-4 w-16"></div>
+                <div hlmSkeleton class="h-4 w-14"></div>
+                <div class="flex gap-0.5">
+                  @for (_ of [1, 2, 3, 4, 5]; track $index) {
+                    <div hlmSkeleton class="size-3.5"></div>
+                  }
+                </div>
               </div>
             </div>
-          </div>
-        </hlm-card>
-      }
-    </div>
-  }
+          </hlm-card>
+        }
+      </div>
+    }
 
-  @if (recipes.error(); as err) {
-    <p class="text-center text-destructive py-12 px-4">
-      {{ err instanceof Error ? err.message : 'Failed to load recipes' }}
-    </p>
-  }
+    @if (recipes.error(); as err) {
+      <p class="text-center text-destructive py-12 px-4">
+        {{ err instanceof Error ? err.message : 'Failed to load recipes' }}
+      </p>
+    }
 
-  @if (recipes.hasValue()) {
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      @for (recipe of recipes.value().items; track recipe.id) {
-        <app-recipe-card [recipe]="recipe" (cardClick)="openDetails($event)" />
-      } @empty {
-        <p class="col-span-full text-center text-muted-foreground py-12">
-          No recipes match your filters
-        </p>
-      }
+    @if (recipes.hasValue()) {
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        @for (recipe of recipes.value().items; track recipe.id) {
+          <app-recipe-card [recipe]="recipe" (cardClick)="openDetails($event)" />
+        } @empty {
+          <p class="col-span-full text-center text-muted-foreground py-12">
+            No recipes match your filters
+          </p>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Desktop chat sidebar -->
+  @if (chat.isOpen()) {
+    <div
+      class="hidden lg:block relative w-96 border-l border-border bg-background -mt-4 right-0 bottom-0"
+    >
+      <app-chat-panel class="h-full" />
     </div>
   }
 </div>
+
+<!-- Mobile chat overlay -->
+@if (chat.isOpen()) {
+  <div class="lg:hidden fixed inset-x-0 top-0 bottom-16 md:bottom-0 z-40 bg-background">
+    <app-chat-panel class="h-full" />
+  </div>
+}

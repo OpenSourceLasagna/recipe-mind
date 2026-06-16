@@ -1,4 +1,4 @@
-import { RecipeCardDto } from "./recipe-card.dto";
+import { RecipeCardDto } from './recipe-card.dto';
 
 export interface RecipeListDto {
   items: RecipeCardDto[];

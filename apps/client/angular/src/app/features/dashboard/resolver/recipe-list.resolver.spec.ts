@@ -24,9 +24,7 @@ describe('recipeListResolver', () => {
       },
     } as unknown as ActivatedRouteSnapshot;
 
-    const result = TestBed.runInInjectionContext(() =>
-      recipeListResolver(route, mockState),
-    );
+    const result = TestBed.runInInjectionContext(() => recipeListResolver(route, mockState));
 
     expect(result).toBe(true);
     expect(filterService.query()).toBe('pasta');
@@ -38,9 +36,7 @@ describe('recipeListResolver', () => {
   it('should handle empty params with defaults', () => {
     const route = { queryParams: {} } as unknown as ActivatedRouteSnapshot;
 
-    const result = TestBed.runInInjectionContext(() =>
-      recipeListResolver(route, mockState),
-    );
+    const result = TestBed.runInInjectionContext(() => recipeListResolver(route, mockState));
 
     expect(result).toBe(true);
     expect(filterService.query()).toBeNull();

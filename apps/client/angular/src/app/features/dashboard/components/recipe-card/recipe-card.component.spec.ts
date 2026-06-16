@@ -12,7 +12,7 @@ const mockRecipe: RecipeResponse = {
   servings: 4,
   durationMinutes: 30,
   difficulty: 'easy',
-  spice_level: 3,
+  spiceLevel: 3,
   origin: 'Test',
   isPublic: true,
   ingredients: [],

@@ -1,18 +1,32 @@
+from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, HTTPException, status
 
+from src.dependencies.auth import CurrentUserID, current_user_id_dep
+from src.dependencies.db import RecipeRepo
 from src.dependencies.services import RecipeIngestor
-from src.models.recipe_ingredient import RecipeIngredient
 from src.models.recipe import Recipe
-from src.schemas.recipe import CreateRecipeRequest, RecipeResponse
+from src.models.recipe_ingredient import RecipeIngredient
+from src.schemas.recipe import (
+    CreateRecipeRequest,
+    RecipeDetailResponse,
+    RecipeResponse,
+    UpdateRecipeRequest,
+)
 
-from ..dependencies.auth import CurrentUserID, current_user_id_dep
 
+router_v1 = APIRouter(
+    prefix="/v1/recipes", tags=["v1", "recipes"], dependencies=[current_user_id_dep]
+)
 
-router_v1 = APIRouter(prefix="/v1/recipes", tags=["v1", "recipes"], dependencies=[current_user_id_dep])
 
 @router_v1.post("/structured", tags=["recipes"], response_model=RecipeResponse)
-async def create_recipe(current_user_id: CurrentUserID, payload: CreateRecipeRequest, recipe_ingestor: RecipeIngestor, background_tasks: BackgroundTasks):
+async def create_recipe(
+    current_user_id: CurrentUserID,
+    payload: CreateRecipeRequest,
+    recipe_ingestor: RecipeIngestor,
+    background_tasks: BackgroundTasks,
+):
     received_recipe = Recipe(
         user_id=current_user_id,
         title=payload.title,
@@ -37,17 +51,59 @@ async def create_recipe(current_user_id: CurrentUserID, payload: CreateRecipeReq
         for ingredient in payload.ingredients
     ]
 
-    saved_recipe = await recipe_ingestor.execute(recipe=received_recipe, background_tasks=background_tasks)
+    saved_recipe = await recipe_ingestor.execute(
+        recipe=received_recipe, background_tasks=background_tasks
+    )
     return saved_recipe
 
-@router_v1.get("/{recipe_id}", tags=["recipes"])
-def get_recipe(recipe_id: str, current_user_id: CurrentUserID):
-    return {"message": f"Recipe information for ID: {recipe_id}"}
 
-@router_v1.patch("/{recipe_id}", tags=["recipes"])
-def update_recipe(recipe_id: str, current_user_id: CurrentUserID):
-    return {"message": f"Recipe with ID: {recipe_id} updated successfully"}
+@router_v1.get("/{recipe_id}", response_model=RecipeDetailResponse)
+async def get_recipe(
+    recipe_id: UUID,
+    current_user_id: CurrentUserID,
+    recipe_repo: RecipeRepo,
+):
+    recipe = await recipe_repo.get_by_id(recipe_id)
+    if recipe is None:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    if not recipe.is_public and recipe.user_id != current_user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
 
-@router_v1.delete("/{recipe_id}", tags=["recipes"])
-def delete_recipe(recipe_id: str, current_user_id: CurrentUserID):
-    return {"message": f"Recipe with ID: {recipe_id} deleted successfully"}
+    resp = RecipeDetailResponse.model_validate(recipe)
+    resp.is_owner = recipe.user_id == current_user_id
+    return resp
+
+
+@router_v1.patch("/{recipe_id}", response_model=RecipeDetailResponse)
+async def update_recipe(
+    recipe_id: UUID,
+    current_user_id: CurrentUserID,
+    payload: UpdateRecipeRequest,
+    recipe_ingestor: RecipeIngestor,
+    background_tasks: BackgroundTasks,
+):
+    updated = await recipe_ingestor.update(
+        recipe_id=recipe_id,
+        user_id=current_user_id,
+        payload=payload,
+        background_tasks=background_tasks,
+    )
+
+    resp = RecipeDetailResponse.model_validate(updated)
+    resp.is_owner = True
+    return resp
+
+
+@router_v1.delete("/{recipe_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_recipe(
+    recipe_id: UUID,
+    current_user_id: CurrentUserID,
+    recipe_repo: RecipeRepo,
+):
+    recipe = await recipe_repo.get_by_id(recipe_id)
+    if recipe is None:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    if recipe.user_id != current_user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    await recipe_repo.delete(recipe)

@@ -5,7 +5,11 @@ from uuid import UUID
 from pydantic import ConfigDict, Field
 
 from src.schemas.camel_model import CamelModel
-from src.schemas.ingredient import RecipeIngredientCreate, RecipeIngredientResponse
+from src.schemas.ingredient import (
+    RecipeIngredientCreate,
+    RecipeIngredientResponse,
+    RecipeIngredientUpdate,
+)
 
 
 class CreateRecipeRequest(CamelModel):
@@ -42,3 +46,22 @@ class RecipeResponse(CamelModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
+class UpdateRecipeRequest(CamelModel):
+    title: str | None = None
+    ingredients: list[RecipeIngredientUpdate] | None = None
+    additional_information: list[str] | None = None
+    instruction_steps: list[str] | None = None
+    nutrition: dict[str, Any] | None = None
+    servings: int | None = None
+    duration_minutes: int | None = None
+    difficulty: Literal["easy", "medium", "hard"] | None = None
+    spice_level: int | None = None
+    origin: str | None = None
+    is_public: bool | None = None
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class RecipeDetailResponse(RecipeResponse):
+    is_owner: bool = False

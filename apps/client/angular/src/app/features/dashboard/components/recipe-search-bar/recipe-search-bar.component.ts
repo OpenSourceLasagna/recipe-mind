@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { heroMagnifyingGlass, heroXMark } from '@ng-icons/heroicons/outline';
 import { HlmInput, HlmInputImports } from '@spartan-ng/helm/input';
@@ -11,7 +19,14 @@ import { HlmButtonGroupImports } from '@spartan-ng/helm/button-group';
 @Component({
   selector: 'app-recipe-search-bar',
   standalone: true,
-  imports: [HlmInputImports, NgIcon, FormField, HlmFieldImports, HlmButtonGroupImports, HlmButtonImports],
+  imports: [
+    HlmInputImports,
+    NgIcon,
+    FormField,
+    HlmFieldImports,
+    HlmButtonGroupImports,
+    HlmButtonImports,
+  ],
   providers: [provideIcons({ heroMagnifyingGlass, heroXMark })],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './recipe-search-bar.component.html',
@@ -21,7 +36,9 @@ export class RecipeSearchBarComponent {
   readonly filterQuery = this.#filterService.query;
   readonly #queryValue = signal({ query: this.filterQuery() ?? '' });
   readonly queryForm = form(this.#queryValue);
-  readonly showClear = computed(() => this.queryForm.query().value().length > 0 || (this.filterQuery()?.length ?? 0) > 0);
+  readonly showClear = computed(
+    () => this.queryForm.query().value().length > 0 || (this.filterQuery()?.length ?? 0) > 0,
+  );
   #lastSubmittedValue = this.filterQuery() ?? '';
 
   constructor() {

@@ -13,8 +13,12 @@ from src.services.embeddings.local_embedding_service import LocalEmbeddingServic
 from src.services.normalization_service import NormalizationService
 from src.services.recipe_ingestion_service import RecipeIngestionService
 from src.services.recipe_serializer import RecipeSerializerService
-from src.services.search.hybrid_search_service import HybridSearchService
 from src.dependencies.db import QueryCacheRepo
+from src.services.ai_chef.ai_chef_service import AIChefService
+from src.services.ai_chef.moderation_service import ModerationService
+from src.services.ai_chef.prompt_guard_service import PromptGuardService
+from src.services.ai_chef.tool_executor import ToolExecutor
+from src.services.search.hybrid_search_service import HybridSearchService
 from src.services.search.reranking_service import RerankingService
 
 
@@ -35,7 +39,7 @@ def get_local_embedding_service(settings: EnvSettings) -> BaseEmbeddingService:
     if _local_embedding_service is None:
         _local_embedding_service = LocalEmbeddingService(
             base_path=settings.local_model_path,
-            model_name=settings.local_embedding_model_name
+            model_name=settings.local_embedding_model_name,
         )
     return _local_embedding_service
 
@@ -128,3 +132,63 @@ def get_hybrid_search_service(
 
 
 HybridSearcher = Annotated[HybridSearchService, Depends(get_hybrid_search_service)]
+
+
+def get_moderation_service(
+    openai_client: OpenAIClient, settings: EnvSettings
+) -> ModerationService:
+    return ModerationService(
+        client=openai_client, threshold=settings.moderation_threshold
+    )
+
+
+ModerationSvc = Annotated[ModerationService, Depends(get_moderation_service)]
+
+
+_prompt_guard_service: PromptGuardService | None = None
+
+
+def get_prompt_guard_service(settings: EnvSettings) -> PromptGuardService:
+    global _prompt_guard_service
+    if _prompt_guard_service is None:
+        _prompt_guard_service = PromptGuardService(
+            model_name=settings.prompt_guard_model_name,
+            threshold=settings.prompt_guard_threshold,
+            base_path=settings.local_model_path,
+        )
+    return _prompt_guard_service
+
+
+PromptGuard = Annotated[PromptGuardService, Depends(get_prompt_guard_service)]
+
+
+def get_tool_executor(
+    hybrid_searcher: HybridSearcher,
+    recipe_repo: RecipeRepo,
+) -> ToolExecutor:
+    return ToolExecutor(
+        hybrid_searcher=hybrid_searcher,
+        recipe_repo=recipe_repo,
+    )
+
+
+ToolExec = Annotated[ToolExecutor, Depends(get_tool_executor)]
+
+
+def get_ai_chef_service(
+    openai_client: OpenAIClient,
+    prompt_guard: PromptGuard,
+    moderation: ModerationSvc,
+    tool_executor: ToolExec,
+    settings: EnvSettings,
+) -> AIChefService:
+    return AIChefService(
+        openai_client=openai_client,
+        prompt_guard=prompt_guard,
+        moderation=moderation,
+        tool_executor=tool_executor,
+        settings=settings,
+    )
+
+
+AIChefSvc = Annotated[AIChefService, Depends(get_ai_chef_service)]

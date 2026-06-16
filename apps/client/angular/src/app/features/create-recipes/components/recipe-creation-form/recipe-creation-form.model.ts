@@ -1,6 +1,15 @@
-import { signal } from "@angular/core";
-import { Difficulty } from "../../models/difficulty.model";
-import { debounce, max, maxLength, min, minLength, required, schema, SchemaPathTree } from "@angular/forms/signals";
+import { signal } from '@angular/core';
+import { Difficulty } from '../../models/difficulty.model';
+import {
+  debounce,
+  max,
+  maxLength,
+  min,
+  minLength,
+  required,
+  schema,
+  SchemaPathTree,
+} from '@angular/forms/signals';
 
 export interface RecipeCreationFormModel {
   title: string;
@@ -34,7 +43,7 @@ export function createRecipeCreationModel() {
     protein: '',
     carbs: '',
     fat: '',
-  })
+  });
 }
 
 export function buildRecipeCreationSection(schema: SchemaPathTree<RecipeCreationFormModel>) {
@@ -48,7 +57,9 @@ export function buildRecipeCreationSection(schema: SchemaPathTree<RecipeCreation
   maxLength(schema.title, 120, { message: 'Title may not exceed 120 characters' });
   required(schema.instructionsText, { message: 'Add at least one instruction step' });
   maxLength(schema.instructionsText, 2000, { message: 'Instructions are too long' });
-  maxLength(schema.additionalInformationText, 600, { message: 'Additional information is too long' });
+  maxLength(schema.additionalInformationText, 600, {
+    message: 'Additional information is too long',
+  });
   maxLength(schema.dietTagsText, 200, { message: 'Diet tags text is too long' });
   maxLength(schema.origin, 60, { message: 'Origin may not exceed 60 characters' });
   min(schema.spiceLevel, 1, { message: 'Spice level must be at least 1' });

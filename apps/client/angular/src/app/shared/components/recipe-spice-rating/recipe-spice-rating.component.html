@@ -1,0 +1,10 @@
+<span class="flex items-center gap-0.5">
+  @for (i of spiceArray; track i) {
+    <ng-icon
+      name="heroFire"
+      [class]="iconSizeClass"
+      [class.text-orange-500]="i <= spiceLevel()"
+      [class.text-muted-foreground-20]="i > spiceLevel()"
+    />
+  }
+</span>

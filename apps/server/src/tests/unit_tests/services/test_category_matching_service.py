@@ -13,18 +13,14 @@ from src.services.category_matching_service import (
 
 
 class TestCategorizeUncategorized:
-    async def test_no_uncategorized_returns_early(
-        self, category_matcher, mock_session
-    ):
+    async def test_no_uncategorized_returns_early(self, category_matcher, mock_session):
         mock_session.exec.return_value.all.return_value = []
 
         await category_matcher.categorize_uncategorized_ingredients()
 
         mock_session.commit.assert_called_once()
 
-    async def test_calls_run_and_commits(
-        self, category_matcher, mock_session
-    ):
+    async def test_calls_run_and_commits(self, category_matcher, mock_session):
         mock_session.exec.return_value.all.return_value = []
         await category_matcher.categorize_uncategorized_ingredients()
         mock_session.commit.assert_called_once()
@@ -200,13 +196,9 @@ class TestMatchByCentroid:
         make_ingredient,
         ingredient_repo,
     ):
-        ingredient = make_ingredient(
-            embedding=[0.5, 0.5, 0.5], category_id=None
-        )
+        ingredient = make_ingredient(embedding=[0.5, 0.5, 0.5], category_id=None)
         ingredient_repo.get_centroids = AsyncMock(
-            return_value=[
-                make_ingredient(embedding=None, category_id=uuid4())
-            ]
+            return_value=[make_ingredient(embedding=None, category_id=uuid4())]
         )
 
         remaining, assignments = await category_matcher._match_by_centroid(
@@ -221,13 +213,9 @@ class TestMatchByCentroid:
         make_ingredient,
         ingredient_repo,
     ):
-        ingredient = make_ingredient(
-            embedding=[0.5, 0.5, 0.5], category_id=None
-        )
+        ingredient = make_ingredient(embedding=[0.5, 0.5, 0.5], category_id=None)
         ingredient_repo.get_centroids = AsyncMock(
-            return_value=[
-                make_ingredient(embedding=[0.5, 0.5, 0.5], category_id=None)
-            ]
+            return_value=[make_ingredient(embedding=[0.5, 0.5, 0.5], category_id=None)]
         )
 
         remaining, assignments = await category_matcher._match_by_centroid(
@@ -262,7 +250,9 @@ class TestClusterIngredients:
 
         assert 2 <= len(clusters) <= 3
 
-    def test_two_identical_ingredients_cluster_together(self, category_matcher, make_ingredient):
+    def test_two_identical_ingredients_cluster_together(
+        self, category_matcher, make_ingredient
+    ):
         ingredients = [
             make_ingredient(embedding=[0.5, 0.5, 0.5]),
             make_ingredient(embedding=[0.5, 0.5, 0.5]),
@@ -573,14 +563,10 @@ class TestPersistAssignments:
         await category_matcher._persist_assignments({}, ingredient_repo)
         ingredient_repo.bulk_update_categories.assert_not_called()
 
-    async def test_delegates_to_bulk_update(
-        self, category_matcher, ingredient_repo
-    ):
+    async def test_delegates_to_bulk_update(self, category_matcher, ingredient_repo):
         ing_id, cat_id = uuid4(), uuid4()
         ingredient_repo.bulk_update_categories = AsyncMock()
-        await category_matcher._persist_assignments(
-            {ing_id: cat_id}, ingredient_repo
-        )
+        await category_matcher._persist_assignments({ing_id: cat_id}, ingredient_repo)
 
         ingredient_repo.bulk_update_categories.assert_called_once_with(
             [(ing_id, cat_id)]
@@ -595,9 +581,7 @@ class TestFullCategorizeFlow:
         single_ingredient = make_ingredient(
             ingredient_name="tomato", normalized_name="tomato", category_id=None
         )
-        ingredient_repo.get_uncategorized = AsyncMock(
-            return_value=[single_ingredient]
-        )
+        ingredient_repo.get_uncategorized = AsyncMock(return_value=[single_ingredient])
         ingredient_repo.get_categorized_by_normalized_names = AsyncMock(
             return_value=[
                 RecipeIngredient(
@@ -617,15 +601,17 @@ class TestFullCategorizeFlow:
         ingredient_repo.get_centroids.assert_not_called()
 
     async def test_phase2_matches_by_centroid_then_stops(
-        self, category_matcher, ingredient_repo, category_repo, uncategorized_ingredients
+        self,
+        category_matcher,
+        ingredient_repo,
+        category_repo,
+        uncategorized_ingredients,
     ):
         cat_id = uuid4()
         ingredient_repo.get_uncategorized = AsyncMock(
             return_value=uncategorized_ingredients
         )
-        ingredient_repo.get_categorized_by_normalized_names = AsyncMock(
-            return_value=[]
-        )
+        ingredient_repo.get_categorized_by_normalized_names = AsyncMock(return_value=[])
         ingredient_repo.get_centroids = AsyncMock(
             return_value=[
                 RecipeIngredient(
@@ -662,12 +648,8 @@ class TestFullCategorizeFlow:
                 category_id=None,
             ),
         ]
-        ingredient_repo.get_uncategorized = AsyncMock(
-            return_value=ingredients
-        )
-        ingredient_repo.get_categorized_by_normalized_names = AsyncMock(
-            return_value=[]
-        )
+        ingredient_repo.get_uncategorized = AsyncMock(return_value=ingredients)
+        ingredient_repo.get_categorized_by_normalized_names = AsyncMock(return_value=[])
         ingredient_repo.get_centroids = AsyncMock(return_value=[])
         category_repo.get_all = AsyncMock(return_value=[])
         ingredient_repo.bulk_update_categories = AsyncMock()

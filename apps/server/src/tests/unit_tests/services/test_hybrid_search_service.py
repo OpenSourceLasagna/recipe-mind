@@ -36,7 +36,7 @@ def mock_repo() -> AsyncMock:
 @pytest.fixture
 def mock_embedder() -> MagicMock:
     embedder = MagicMock()
-    embedder.embed = MagicMock(return_value=[0.1, 0.2, 0.3])
+    embedder.embed = AsyncMock(return_value=[0.1, 0.2, 0.3])
     return embedder
 
 
@@ -56,7 +56,9 @@ def mock_cache_repo() -> AsyncMock:
 
 
 @pytest.fixture
-def service(mock_repo, mock_embedder, mock_reranker, mock_cache_repo) -> HybridSearchService:
+def service(
+    mock_repo, mock_embedder, mock_reranker, mock_cache_repo
+) -> HybridSearchService:
     return HybridSearchService(
         recipe_repo=mock_repo,
         embedder=mock_embedder,
@@ -314,7 +316,9 @@ class TestSearch:
         assert total == 3
 
     @pytest.mark.asyncio
-    async def test_search_sorts_by_relevance_desc_by_default(self, service, mock_repo, mock_reranker):
+    async def test_search_sorts_by_relevance_desc_by_default(
+        self, service, mock_repo, mock_reranker
+    ):
         uids = _uuids(3)
         recipes = [_make_recipe(id=uid) for uid in uids]
         mock_repo.search_by_vector = AsyncMock(
@@ -337,7 +341,9 @@ class TestSearch:
         assert all(isinstance(r, Recipe) for r in result)
 
     @pytest.mark.asyncio
-    async def test_search_sorts_by_relevance_asc(self, service, mock_repo, mock_reranker):
+    async def test_search_sorts_by_relevance_asc(
+        self, service, mock_repo, mock_reranker
+    ):
         uids = _uuids(3)
         recipes = [_make_recipe(id=uid) for uid in uids]
         mock_repo.search_by_vector = AsyncMock(
@@ -360,7 +366,9 @@ class TestSearch:
         assert all(isinstance(r, Recipe) for r in result)
 
     @pytest.mark.asyncio
-    async def test_search_sorts_by_duration_minutes(self, service, mock_repo, mock_reranker):
+    async def test_search_sorts_by_duration_minutes(
+        self, service, mock_repo, mock_reranker
+    ):
         uid1, uid2 = _uuids(2)
         r1 = _make_recipe(id=uid1, duration_minutes=45)
         r2 = _make_recipe(id=uid2, duration_minutes=15)
@@ -383,7 +391,9 @@ class TestSearch:
         assert durations == [15, 45]
 
     @pytest.mark.asyncio
-    async def test_search_missing_recipes_skipped(self, service, mock_repo, mock_reranker):
+    async def test_search_missing_recipes_skipped(
+        self, service, mock_repo, mock_reranker
+    ):
         uid1, uid2 = _uuids(2)
         r1 = _make_recipe(id=uid1)
         mock_repo.search_by_vector = AsyncMock(return_value=[(uid1, 0.9), (uid2, 0.5)])

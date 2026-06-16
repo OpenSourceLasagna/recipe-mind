@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../../environments/environment';
 import { HttpClient } from '@angular/common/http';
-import { first, Observable, throwError } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
 import { CreateRecipeRequest } from '../models/create-recipe.model';
 import { RecipeResponse } from '../../dashboard/models/recipe.model';
 
@@ -33,9 +33,5 @@ export class RecipeService {
 
   addTextRecipe(text: string): Observable<unknown> {
     return this.#http.post(`${this.#baseUrl}/text`, { text });
-  }
-
-  getRecipe() {
-    this.#http.get(`${this.#baseUrl}/1`).pipe(first()).subscribe(console.log)
   }
 }

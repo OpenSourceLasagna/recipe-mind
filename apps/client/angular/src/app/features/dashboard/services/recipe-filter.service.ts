@@ -51,8 +51,10 @@ export class RecipeFilterService {
     const names: string[] = [];
     if (m.difficulty) names.push('difficulty');
     if (m.spiceMax) names.push('spice');
-    if (m.duration[0] > DURATION_RANGE[0] || m.duration[1] < DURATION_RANGE[1]) names.push('duration');
-    if (m.servings[0] > SERVINGS_RANGE[0] || m.servings[1] < SERVINGS_RANGE[1]) names.push('servings');
+    if (m.duration[0] > DURATION_RANGE[0] || m.duration[1] < DURATION_RANGE[1])
+      names.push('duration');
+    if (m.servings[0] > SERVINGS_RANGE[0] || m.servings[1] < SERVINGS_RANGE[1])
+      names.push('servings');
     if (m.origin) names.push('origin');
     if (m.categories) names.push('categories');
     return names;
@@ -91,10 +93,10 @@ export class RecipeFilterService {
   setQuery(value: string | null): void {
     this.#query.set(value);
     if (value) {
-      this.model.update(m => ({ ...m, sortBy: 'relevance' }));
+      this.model.update((m) => ({ ...m, sortBy: 'relevance' }));
       this.#c.sortBy.set('relevance');
     } else {
-      this.model.update(m => ({ ...m, sortBy: DEFAULT_SORT.sortBy }));
+      this.model.update((m) => ({ ...m, sortBy: DEFAULT_SORT.sortBy }));
       this.#c.sortBy.set(DEFAULT_SORT.sortBy);
     }
     this.#page.set(1);

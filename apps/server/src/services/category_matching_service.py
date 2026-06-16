@@ -2,7 +2,7 @@ import json
 from uuid import UUID
 
 import numpy as np
-from openai import OpenAI
+from openai import AsyncOpenAI
 from sklearn.cluster import AgglomerativeClustering
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -27,7 +27,7 @@ class CategoryMatchingService:
         self,
         embedding_model: BaseEmbeddingService,
         session_factory: async_sessionmaker[AsyncSession],
-        openai_client: OpenAI | None = None,
+        openai_client: AsyncOpenAI | None = None,
     ):
         self.embedder = embedding_model
         self.session_factory = session_factory
@@ -85,9 +85,7 @@ class CategoryMatchingService:
 
         # --- Phase 5: name new categories ---
         if new_categories:
-            await self._name_and_persist_categories(
-                new_categories, category_repo
-            )
+            await self._name_and_persist_categories(new_categories, category_repo)
 
         await self._persist_assignments(assignments, ingredient_repo)
 
@@ -177,9 +175,13 @@ class CategoryMatchingService:
         category_repo: IngredientCategoryRepository,
         ingredient_repo: RecipeIngredientRepository,
         unembedded_ingredients: list[RecipeIngredient] | None = None,
-    ) -> tuple[dict[UUID, UUID], list[tuple[int, list[RecipeIngredient], RecipeIngredient]]]:
+    ) -> tuple[
+        dict[UUID, UUID], list[tuple[int, list[RecipeIngredient], RecipeIngredient]]
+    ]:
         new_categories: list[tuple[int, list[RecipeIngredient], RecipeIngredient]] = []
-        singleton_ingredients: list[RecipeIngredient] = list(unembedded_ingredients) if unembedded_ingredients else []
+        singleton_ingredients: list[RecipeIngredient] = (
+            list(unembedded_ingredients) if unembedded_ingredients else []
+        )
         assignments: dict[UUID, UUID] = {}
 
         # Load existing centroids for reuse check
@@ -204,7 +206,10 @@ class CategoryMatchingService:
                     ex_embs = np.array(ex_embs)
                     reuse_sims = ex_embs @ emb
                     best_reuse = int(np.argmax(reuse_sims))
-                    if reuse_sims[best_reuse] >= CENTROID_MERGE_CLUSTER_COSINE_SIMILARITY:
+                    if (
+                        reuse_sims[best_reuse]
+                        >= CENTROID_MERGE_CLUSTER_COSINE_SIMILARITY
+                    ):
                         assignments[members[0].id] = ex_cat_ids[best_reuse]
                         continue
 
@@ -252,7 +257,7 @@ class CategoryMatchingService:
             category = IngredientCategory(
                 category_name=name,
                 centroid_id=centroid_ingredient.id,
-                ingredients=members
+                ingredients=members,
             )
             await category_repo.create(category)
 
@@ -275,11 +280,11 @@ class CategoryMatchingService:
             "You are categorizing recipe ingredients. For each group of ingredients below, "
             "suggest a single concise category name (1-3 words) that best describes the group.\n"
             "Respond in JSON format with the group label as key and the category name as value.\n"
-            "Use the exact raw integer string as the key (e.g. \"0\", \"1\", \"2\").\n\n"
+            'Use the exact raw integer string as the key (e.g. "0", "1", "2").\n\n'
             + "\n".join(cluster_texts)
         )
 
-        response = self.openai_client.chat.completions.create(
+        response = await self.openai_client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"},

@@ -38,15 +38,14 @@ export class AuthService {
   }
 
   async signInWithGoogle() {
-    throw new Error("Google is not yet supported in this demo. Please use Email/PW to sign in.");
+    throw new Error('Google is not yet supported in this demo. Please use Email/PW to sign in.');
     const { error } = await this.#supabase.auth.signInWithOAuth({ provider: 'google' });
     if (error) throw error;
   }
 
   async signInWithGitHub() {
-    throw new Error("GitHub is not yet supported in this demo. Please use Email/PW to sign in.");
+    throw new Error('GitHub is not yet supported in this demo. Please use Email/PW to sign in.');
     const { error } = await this.#supabase.auth.signInWithOAuth({ provider: 'github' });
     if (error) throw error;
   }
 }
-

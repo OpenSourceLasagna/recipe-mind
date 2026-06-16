@@ -101,7 +101,7 @@ describe('RecipeFilterService', () => {
 
   describe('commit', () => {
     it('should push model values to committed signals', () => {
-      service.model.update(m => ({
+      service.model.update((m) => ({
         ...m,
         difficulty: 'easy',
         spiceMax: 3,
@@ -119,7 +119,7 @@ describe('RecipeFilterService', () => {
       service.hydrateFromParams({ page: '5' });
       expect(service.toHttpParams().get('page')).toBe('5');
 
-      service.model.update(m => ({ ...m, difficulty: 'hard' }));
+      service.model.update((m) => ({ ...m, difficulty: 'hard' }));
       service.commit();
       expect(service.toHttpParams().get('page')).toBe('1');
     });
@@ -127,7 +127,7 @@ describe('RecipeFilterService', () => {
 
   describe('resetAll', () => {
     it('should reset all model values to defaults', () => {
-      service.model.update(m => ({
+      service.model.update((m) => ({
         ...m,
         difficulty: 'hard',
         spiceMax: 5,
@@ -153,32 +153,32 @@ describe('RecipeFilterService', () => {
 
   describe('activeFilters', () => {
     it('should include difficulty when set', () => {
-      service.model.update(m => ({ ...m, difficulty: 'easy' }));
+      service.model.update((m) => ({ ...m, difficulty: 'easy' }));
       expect(service.activeFilters()).toContain('difficulty');
     });
 
     it('should include spice when set', () => {
-      service.model.update(m => ({ ...m, spiceMax: 3 }));
+      service.model.update((m) => ({ ...m, spiceMax: 3 }));
       expect(service.activeFilters()).toContain('spice');
     });
 
     it('should include duration when narrower than defaults', () => {
-      service.model.update(m => ({ ...m, duration: [10, 200] }));
+      service.model.update((m) => ({ ...m, duration: [10, 200] }));
       expect(service.activeFilters()).toContain('duration');
     });
 
     it('should include servings when narrower than defaults', () => {
-      service.model.update(m => ({ ...m, servings: [2, 6] }));
+      service.model.update((m) => ({ ...m, servings: [2, 6] }));
       expect(service.activeFilters()).toContain('servings');
     });
 
     it('should include origin when set', () => {
-      service.model.update(m => ({ ...m, origin: 'Mexican' }));
+      service.model.update((m) => ({ ...m, origin: 'Mexican' }));
       expect(service.activeFilters()).toContain('origin');
     });
 
     it('should include categories when set', () => {
-      service.model.update(m => ({ ...m, categories: 'vegetables,meat' }));
+      service.model.update((m) => ({ ...m, categories: 'vegetables,meat' }));
       expect(service.activeFilters()).toContain('categories');
     });
 
@@ -325,7 +325,7 @@ describe('RecipeFilterService', () => {
     });
 
     it('should include duration bounds when narrower than defaults', () => {
-      service.model.update(m => ({ ...m, duration: [10, 60] }));
+      service.model.update((m) => ({ ...m, duration: [10, 60] }));
       service.commit();
 
       const params = service.toHttpParams();

@@ -1,6 +1,7 @@
 from pydantic import PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class Settings(BaseSettings):
     supabase_url: str
     supabase_key: str
@@ -16,6 +17,15 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     cors_origins: set[str] = set()
 
+    ai_chef_model_name: str = "gpt-5.4-nano"
+    ai_chef_max_tokens: int = 800
+    ai_chef_temperature: float = 0.3
+    prompt_guard_model_name: str = "gravitee-io/Llama-Prompt-Guard-2-86M-onnx"
+    prompt_guard_threshold: float = 0.6
+    moderation_threshold: float = 0.5
+    ai_chef_rate_limit_rpm: int = 10
+    ai_chef_max_iterations: int = 5
+    max_history_messages: int = 10
 
     model_config = SettingsConfigDict(
         env_file=".env",

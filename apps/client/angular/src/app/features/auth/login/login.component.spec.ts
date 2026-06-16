@@ -25,7 +25,9 @@ describe('LoginComponent', () => {
     }).compileComponents();
 
     router = TestBed.inject(Router);
-    authService = TestBed.inject(AuthService) as unknown as ReturnType<typeof createAuthServiceMock>;
+    authService = TestBed.inject(AuthService) as unknown as ReturnType<
+      typeof createAuthServiceMock
+    >;
     fixture = TestBed.createComponent(LoginComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();

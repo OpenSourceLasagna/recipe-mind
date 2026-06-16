@@ -39,7 +39,6 @@ class HybridSearchService:
     CANDIDATE_SELECTION_LIMIT = 200
     CANDIDATE_LIMIT = 100
 
-
     def __init__(
         self,
         recipe_repo: RecipeRepository,
@@ -66,7 +65,7 @@ class HybridSearchService:
         if cached and cached.embedding is not None:
             embedding = cached.embedding
         else:
-            embedding = self._embedder.embed(query_text)
+            embedding = await self._embedder.embed(query_text)
             await self._cache_repo.create(
                 QueryCache(query_string=query_text, embedding=embedding)
             )
@@ -103,7 +102,9 @@ class HybridSearchService:
 
         scored_recipes.sort(key=lambda sr: sr.combined_score, reverse=True)
 
-        ranked_recipes: list[Recipe] = self._reranker.rerank(scored_recipes[:self.CANDIDATE_LIMIT], query_text)
+        ranked_recipes: list[Recipe] = self._reranker.rerank(
+            scored_recipes[: self.CANDIDATE_LIMIT], query_text
+        )
 
         total = len(ranked_recipes)
 

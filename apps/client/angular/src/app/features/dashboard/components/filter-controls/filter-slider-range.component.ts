@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, forwardRef, input, model } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  forwardRef,
+  input,
+  model,
+} from '@angular/core';
 import { type ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import type { ChangeFn, TouchFn } from '@spartan-ng/brain/forms';
 import type { RangeTuple } from '../../models/recipe-filter.model';
@@ -22,8 +29,15 @@ import { HlmSliderImports } from '@spartan-ng/helm/slider';
         <span class="text-xs text-muted-foreground">{{ label() }}</span>
         <span class="text-sm font-medium">{{ rangeLabel() }}</span>
       </div>
-      <hlm-slider [value]="sliderValue()" (valueChange)="onSliderChange($any($event))"
-        [min]="sliderMin()" [max]="sliderMax()" [step]="step()" [showTicks]="true" [minStepsBetweenThumbs]="0" />
+      <hlm-slider
+        [value]="sliderValue()"
+        (valueChange)="onSliderChange($any($event))"
+        [min]="sliderMin()"
+        [max]="sliderMax()"
+        [step]="step()"
+        [showTicks]="true"
+        [minStepsBetweenThumbs]="0"
+      />
     </div>
   `,
 })

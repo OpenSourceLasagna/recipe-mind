@@ -23,15 +23,26 @@
 
       <div class="space-y-2">
         <h4 class="text-sm font-medium text-foreground">Duration</h4>
-        <app-filter-slider-range [formField]="filter.form.duration"
-          [sliderMin]="durationRange[0]" [sliderMax]="durationRange[1]" [step]="5" unit="min" label="Duration" />
+        <app-filter-slider-range
+          [formField]="filter.form.duration"
+          [sliderMin]="durationRange[0]"
+          [sliderMax]="durationRange[1]"
+          [step]="5"
+          unit="min"
+          label="Duration"
+        />
       </div>
       <hlm-separator />
 
       <div class="space-y-2">
         <h4 class="text-sm font-medium text-foreground">Servings</h4>
-        <app-filter-slider-range [formField]="filter.form.servings"
-          [sliderMin]="servingsRange[0]" [sliderMax]="servingsRange[1]" [step]="1" label="Servings" />
+        <app-filter-slider-range
+          [formField]="filter.form.servings"
+          [sliderMin]="servingsRange[0]"
+          [sliderMax]="servingsRange[1]"
+          [step]="1"
+          label="Servings"
+        />
       </div>
       <hlm-separator />
 
@@ -54,12 +65,8 @@
     </div>
 
     <hlm-sheet-footer>
-      <button hlmBtn variant="outline" class="flex-1" (click)="reset()" hlmSheetClose>
-        Reset
-      </button>
-      <button hlmBtn class="flex-1" (click)="apply()" hlmSheetClose>
-        Apply
-      </button>
+      <button hlmBtn variant="outline" class="flex-1" (click)="reset()" hlmSheetClose>Reset</button>
+      <button hlmBtn class="flex-1" (click)="apply()" hlmSheetClose>Apply</button>
     </hlm-sheet-footer>
   </hlm-sheet-content>
 </hlm-sheet>

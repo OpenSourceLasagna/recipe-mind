@@ -1,4 +1,3 @@
-
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -12,6 +11,13 @@ class RecipeIngredientCreate(CamelModel):
     unit: str = ""
 
 
+class RecipeIngredientUpdate(CamelModel):
+    id: UUID | None = None
+    ingredient_name: str
+    quantity: float = 1.0
+    unit: str = ""
+
+
 class RecipeIngredientResponse(CamelModel):
     id: UUID
     ingredient_name: str
@@ -20,4 +26,3 @@ class RecipeIngredientResponse(CamelModel):
     category_id: UUID | None = None
 
     model_config = ConfigDict(from_attributes=True)
-    

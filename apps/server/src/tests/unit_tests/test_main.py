@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import FastAPI, Request
@@ -23,7 +23,9 @@ def _set_test_env_vars(monkeypatch):
     """Override env vars before any src.main import happens."""
     monkeypatch.setenv("SUPABASE_URL", "https://test.supabase.co")
     monkeypatch.setenv("SUPABASE_KEY", "test-supabase-key")
-    monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://user:pass@localhost/testdb")
+    monkeypatch.setenv(
+        "DATABASE_URL", "postgresql+asyncpg://user:pass@localhost/testdb"
+    )
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test-openai-key")
     monkeypatch.setenv("EMBEDDING_MODEL_NAME", "text-embedding-3-small")
     monkeypatch.setenv("EMBEDDING_SIZE", "1536")
@@ -50,9 +52,7 @@ def client(app: FastAPI) -> TestClient:
 @pytest.fixture
 def mock_supabase_client() -> MagicMock:
     client = MagicMock(spec=Client)
-    client.postgrest.from_table.return_value.select.return_value.limit.return_value.execute.return_value = (
-        MagicMock()
-    )
+    client.postgrest.from_table.return_value.select.return_value.limit.return_value.execute.return_value = MagicMock()
     return client
 
 
@@ -62,7 +62,7 @@ def _override_deps(app: FastAPI, mock_supabase_client: MagicMock):
     from src.dependencies.clients import get_supabase_client, get_openai_client
 
     mock_openai = MagicMock()
-    mock_openai.models.list.return_value = {}
+    mock_openai.models.list = AsyncMock(return_value={})
 
     app.dependency_overrides[get_supabase_client] = lambda: mock_supabase_client
     app.dependency_overrides[get_openai_client] = lambda: mock_openai
@@ -144,9 +144,7 @@ class TestHealthCheck:
         assert data["base_provider"] is True
         assert data["ai"] is False
 
-    def test_health_supabase_disconnected(
-        self, app: FastAPI, client: TestClient
-    ):
+    def test_health_supabase_disconnected(self, app: FastAPI, client: TestClient):
         from src.dependencies.clients import get_supabase_client
 
         app.dependency_overrides[get_supabase_client] = lambda: None
@@ -196,6 +194,7 @@ class TestExceptionHandlers:
         response = await handler(mock_req, ValueError("test error"))
 
         import json
+
         body = json.loads(response.body)
         assert body["detail"] == "Internal server error"
 

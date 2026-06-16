@@ -25,7 +25,9 @@ describe('NavBarComponent', () => {
     }).compileComponents();
 
     router = TestBed.inject(Router);
-    authService = TestBed.inject(AuthService) as unknown as ReturnType<typeof createAuthServiceMock>;
+    authService = TestBed.inject(AuthService) as unknown as ReturnType<
+      typeof createAuthServiceMock
+    >;
     fixture = TestBed.createComponent(NavBarComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
@@ -35,11 +37,10 @@ describe('NavBarComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should render logo and all 4 nav items', () => {
+  it('should render logo and all 3 nav items', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.textContent).toContain('CulinarAI');
     expect(el.textContent).toContain('Explore');
-    expect(el.textContent).toContain('AI Chef');
     expect(el.textContent).toContain('Add New');
     expect(el.textContent).toContain('Saved');
   });

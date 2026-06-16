@@ -1,8 +1,7 @@
-from uuid import UUID
-
 from sqlmodel.ext.asyncio.session import AsyncSession
 from src.models.query_cache import QueryCache
 from sqlmodel import select
+
 
 class QueryCacheRepository:
     def __init__(self, a_session: AsyncSession):

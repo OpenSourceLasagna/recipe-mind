@@ -1,3 +1,5 @@
+import asyncio
+
 from sentence_transformers import SentenceTransformer
 
 from src.services.embeddings.base_embedding_service import BaseEmbeddingService
@@ -13,10 +15,21 @@ class LocalEmbeddingService(BaseEmbeddingService):
 
         self.embedding_model = SentenceTransformer(str(saved_path), device="cpu")
 
-    def embed(self, value: str) -> list[float]:
-        embedding = self.embedding_model.encode(inputs=value, normalize_embeddings=True, convert_to_numpy=True) # type: ignore
+    async def embed(self, value: str) -> list[float]:
+        embedding = await asyncio.to_thread(
+            self.embedding_model.encode,  # type: ignore
+            inputs=value,
+            normalize_embeddings=True,
+            convert_to_numpy=True,
+        )
         return embedding.tolist()
 
-    def embed_many(self, values: list[str]) -> list[list[float]]:
-        embeddings = self.embedding_model.encode(values, normalize_embeddings=True, batch_size=32, convert_to_numpy=True) # type: ignore
+    async def embed_many(self, values: list[str]) -> list[list[float]]:
+        embeddings = await asyncio.to_thread(
+            self.embedding_model.encode,  # type: ignore
+            values,
+            normalize_embeddings=True,
+            batch_size=32,
+            convert_to_numpy=True,
+        )
         return embeddings.tolist()

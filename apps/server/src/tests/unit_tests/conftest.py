@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 import numpy as np
 import pytest
 from fastapi import BackgroundTasks
-from openai import OpenAI
+from openai import AsyncOpenAI
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.database.repositories.ingredients_categories_repository import (
@@ -30,6 +30,7 @@ from src.services.recipe_serializer import RecipeSerializerService
 # ------------------------------------------------------------------ #
 #  Fixtures: Model factories
 # ------------------------------------------------------------------ #
+
 
 @pytest.fixture
 def recipe_id() -> UUID:
@@ -98,7 +99,9 @@ def make_ingredient(
 
 
 @pytest.fixture
-def make_category(category_id: UUID, ingredient_id: UUID) -> Callable[..., IngredientCategory]:
+def make_category(
+    category_id: UUID, ingredient_id: UUID
+) -> Callable[..., IngredientCategory]:
     def _make(**overrides: Any) -> IngredientCategory:
         defaults: dict[str, Any] = {
             "id": category_id,
@@ -114,6 +117,7 @@ def make_category(category_id: UUID, ingredient_id: UUID) -> Callable[..., Ingre
 # ------------------------------------------------------------------ #
 #  Fixtures: Embedding vector helpers
 # ------------------------------------------------------------------ #
+
 
 @pytest.fixture
 def embedding_vector() -> list[float]:
@@ -176,20 +180,16 @@ def category_repo(mock_session: AsyncMock) -> IngredientCategoryRepository:
 @pytest.fixture
 def mock_embedder() -> MagicMock:
     embedder = MagicMock(spec=BaseEmbeddingService)
-    embedder.embed = Mock(return_value=[0.1, 0.2, 0.3])
-    embedder.embed_many = Mock(
-        return_value=[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
-    )
+    embedder.embed = AsyncMock(return_value=[0.1, 0.2, 0.3])
+    embedder.embed_many = AsyncMock(return_value=[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
     return embedder
 
 
 @pytest.fixture
 def mock_small_embedder() -> MagicMock:
     embedder = MagicMock(spec=BaseEmbeddingService)
-    embedder.embed = Mock(return_value=[0.7, 0.8, 0.9])
-    embedder.embed_many = Mock(
-        return_value=[[0.7, 0.8, 0.9], [0.1, 0.2, 0.3]]
-    )
+    embedder.embed = AsyncMock(return_value=[0.7, 0.8, 0.9])
+    embedder.embed_many = AsyncMock(return_value=[[0.7, 0.8, 0.9], [0.1, 0.2, 0.3]])
     return embedder
 
 
@@ -200,24 +200,25 @@ def mock_small_embedder() -> MagicMock:
 
 @pytest.fixture
 def mock_openai_client() -> MagicMock:
-    client = MagicMock(spec=OpenAI)
+    client = MagicMock(spec=AsyncOpenAI)
     chat_completion = MagicMock()
     choice = MagicMock()
     choice.message.content = '{"0": "Vegetables", "1": "Spices"}'
     chat_completion.choices = [choice]
-    client.chat.completions.create = Mock(return_value=chat_completion)
+    client.chat.completions.create = AsyncMock(return_value=chat_completion)
+    client.moderations.create = AsyncMock()
     return client
 
 
 @pytest.fixture
 def mock_openai_embedding_client() -> MagicMock:
-    client = MagicMock(spec=OpenAI)
+    client = MagicMock(spec=AsyncOpenAI)
     embedding_data = MagicMock()
     embedding_data.data = [
         MagicMock(embedding=[0.1, 0.2, 0.3]),
         MagicMock(embedding=[0.4, 0.5, 0.6]),
     ]
-    client.embeddings.create = Mock(return_value=embedding_data)
+    client.embeddings.create = AsyncMock(return_value=embedding_data)
     return client
 
 
@@ -368,8 +369,12 @@ def uncategorized_ingredients(
     make_ingredient: Callable[..., RecipeIngredient],
 ) -> list[RecipeIngredient]:
     return [
-        make_ingredient(ingredient_name="tomato", normalized_name="tomato", category_id=None),
-        make_ingredient(ingredient_name="basil", normalized_name="basil", category_id=None),
+        make_ingredient(
+            ingredient_name="tomato", normalized_name="tomato", category_id=None
+        ),
+        make_ingredient(
+            ingredient_name="basil", normalized_name="basil", category_id=None
+        ),
     ]
 
 
@@ -382,7 +387,9 @@ def singleton_ingredients(
         make_ingredient(
             ingredient_name="rare_spice",
             normalized_name="rare_spice",
-            embedding=(rng.uniform(-1, 1, 768) / np.linalg.norm(rng.uniform(-1, 1, 768))).tolist(),
+            embedding=(
+                rng.uniform(-1, 1, 768) / np.linalg.norm(rng.uniform(-1, 1, 768))
+            ).tolist(),
             category_id=None,
         )
     ]

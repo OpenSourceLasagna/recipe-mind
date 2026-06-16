@@ -6,6 +6,7 @@
 /* You can add global styles to this file, and also import other style files */
 
 @import '@spartan-ng/brain/hlm-tailwind-preset.css';
+@plugin '@tailwindcss/typography';
 
 :root {
   color-scheme: light;

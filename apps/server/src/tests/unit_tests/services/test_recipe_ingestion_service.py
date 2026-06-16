@@ -1,5 +1,7 @@
 from unittest.mock import AsyncMock
 
+import pytest
+
 from src.models.recipe_ingredient import RecipeIngredient
 
 
@@ -50,7 +52,7 @@ class TestRecipeIngestionService:
         await ingestion_service.execute(recipe, background_tasks)
 
         call_arg = mock_embedder.embed.call_args[0][0]
-        assert "# Recipe: Test Recipe" in call_arg
+        assert "# Test Recipe" in call_arg
 
     async def test_execute_normalizes_all_ingredients(
         self,
@@ -120,12 +122,16 @@ class TestRecipeIngestionService:
         )
         assert result == recipe
 
-    def test_embed_ingredients_empty_list(self, ingestion_service, mock_small_embedder):
-        result = ingestion_service._embed_ingredients([])
+    @pytest.mark.asyncio
+    async def test_embed_ingredients_empty_list(
+        self, ingestion_service, mock_small_embedder
+    ):
+        result = await ingestion_service._embed_ingredients([])
         assert result == []
         mock_small_embedder.embed_many.assert_not_called()
 
-    def test_embed_ingredients_uses_normalized_name_when_available(
+    @pytest.mark.asyncio
+    async def test_embed_ingredients_uses_normalized_name_when_available(
         self,
         ingestion_service,
         mock_small_embedder,
@@ -134,18 +140,19 @@ class TestRecipeIngestionService:
     ):
         ingredients = [
             RecipeIngredient(
-                id=recipe_id,  # not ideal but works for mock
+                id=recipe_id,
                 recipe_id=recipe_id,
                 ingredient_name="Raw Tomato",
                 normalized_name="tomato",
             )
         ]
-        ingestion_service._embed_ingredients(ingredients)
+        await ingestion_service._embed_ingredients(ingredients)
 
         call_args = mock_small_embedder.embed_many.call_args[1]["values"]
         assert call_args == ["tomato"]
 
-    def test_embed_ingredients_falls_back_to_ingredient_name(
+    @pytest.mark.asyncio
+    async def test_embed_ingredients_falls_back_to_ingredient_name(
         self,
         ingestion_service,
         mock_small_embedder,
@@ -155,12 +162,13 @@ class TestRecipeIngestionService:
             ingredient_name="Raw Tomato",
             normalized_name=None,
         )
-        ingestion_service._embed_ingredients([ingredient])
+        await ingestion_service._embed_ingredients([ingredient])
 
         call_args = mock_small_embedder.embed_many.call_args[1]["values"]
         assert call_args == ["Raw Tomato"]
 
-    def test_embed_ingredients_sets_embedding_on_each(
+    @pytest.mark.asyncio
+    async def test_embed_ingredients_sets_embedding_on_each(
         self,
         ingestion_service,
         mock_small_embedder,
@@ -172,7 +180,7 @@ class TestRecipeIngestionService:
         ]
         mock_small_embedder.embed_many.return_value = [[0.1], [0.2]]
 
-        result = ingestion_service._embed_ingredients(ingredients)
+        result = await ingestion_service._embed_ingredients(ingredients)
 
         assert result[0].embedding == [0.1]
         assert result[1].embedding == [0.2]

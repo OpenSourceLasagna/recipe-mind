@@ -134,3 +134,142 @@ class TestRecipeRepository:
         conditions = recipe_repo._build_filter_conditions(user_id, filters)
 
         assert len(conditions) == 1
+
+    async def test_update_commits_and_refreshes(
+        self, recipe_repo, mock_session, make_recipe
+    ):
+        recipe = make_recipe()
+
+        result = await recipe_repo.update(recipe)
+
+        mock_session.commit.assert_called_once()
+        mock_session.refresh.assert_called_once_with(recipe)
+        assert result == recipe
+
+    async def test_delete_removes_ingredients_and_recipe(
+        self, recipe_repo, mock_session, make_recipe, make_ingredient
+    ):
+        ingredient_a = make_ingredient(ingredient_name="a")
+        ingredient_b = make_ingredient(ingredient_name="b")
+        recipe = make_recipe(ingredients=[ingredient_a, ingredient_b])
+
+        await recipe_repo.delete(recipe)
+
+        assert mock_session.delete.call_count == 3
+        mock_session.delete.assert_any_call(ingredient_a)
+        mock_session.delete.assert_any_call(ingredient_b)
+        mock_session.delete.assert_any_call(recipe)
+        mock_session.commit.assert_called_once()
+
+    async def test_delete_with_no_ingredients(
+        self, recipe_repo, mock_session, make_recipe
+    ):
+        recipe = make_recipe(ingredients=[])
+
+        await recipe_repo.delete(recipe)
+
+        mock_session.delete.assert_called_once_with(recipe)
+        mock_session.commit.assert_called_once()
+
+    async def test_search_returns_paginated_results(
+        self, recipe_repo, mock_session, user_id, make_recipe
+    ):
+        recipes = [make_recipe(title=f"Recipe {i}") for i in range(3)]
+        mock_session.exec.return_value.all.return_value = recipes
+        mock_session.exec.return_value.one.return_value = 3
+
+        from src.schemas.search import RecipeSearchQuery
+
+        query = RecipeSearchQuery(query="pasta", page=1, page_size=10)
+        result_recipes, total = await recipe_repo.search(user_id=user_id, query=query)
+
+        assert total == 3
+        assert result_recipes == recipes
+
+    async def test_search_without_text_query(self, recipe_repo, mock_session, user_id):
+        mock_session.exec.return_value.all.return_value = []
+        mock_session.exec.return_value.one.return_value = 0
+
+        from src.schemas.search import RecipeSearchQuery
+
+        query = RecipeSearchQuery()
+        recipes, total = await recipe_repo.search(user_id=user_id, query=query)
+
+        assert recipes == []
+        assert total == 0
+
+    async def test_search_with_category_ids(self, recipe_repo, mock_session, user_id):
+        mock_session.exec.return_value.all.return_value = []
+        mock_session.exec.return_value.one.return_value = 0
+        cat_id = uuid4()
+
+        from src.schemas.search import RecipeSearchQuery
+
+        query = RecipeSearchQuery()
+        recipes, total = await recipe_repo.search(
+            user_id=user_id,
+            query=query,
+            ingredient_category_ids=[cat_id],
+        )
+
+        assert recipes == []
+
+    async def test_search_by_vector_returns_scored_pairs(
+        self, recipe_repo, mock_session, user_id
+    ):
+        recipe_a, recipe_b = uuid4(), uuid4()
+        mock_session.exec.return_value.all.return_value = [
+            (recipe_a, 0.9),
+            (recipe_b, 0.7),
+        ]
+
+        results = await recipe_repo.search_by_vector(
+            embedding=[0.1, 0.2, 0.3],
+            user_id=user_id,
+            filters=SearchFilters(),
+        )
+
+        assert results == [(recipe_a, 0.9), (recipe_b, 0.7)]
+
+    async def test_search_by_vector_empty_results(
+        self, recipe_repo, mock_session, user_id
+    ):
+        mock_session.exec.return_value.all.return_value = []
+
+        results = await recipe_repo.search_by_vector(
+            embedding=[0.1, 0.2, 0.3],
+            user_id=user_id,
+            filters=SearchFilters(),
+        )
+
+        assert results == []
+
+    async def test_search_by_fulltext_returns_scored_pairs(
+        self, recipe_repo, mock_session, user_id
+    ):
+        recipe_a, recipe_b = uuid4(), uuid4()
+        mock_session.exec.return_value.all.return_value = [
+            (recipe_a, 0.85),
+            (recipe_b, 0.42),
+        ]
+
+        results = await recipe_repo.search_by_fulltext(
+            query_text="creamy tomato",
+            user_id=user_id,
+            filters=SearchFilters(),
+        )
+
+        assert results == [(recipe_a, 0.85), (recipe_b, 0.42)]
+
+    async def test_search_by_fulltext_empty_results(
+        self, recipe_repo, mock_session, user_id
+    ):
+        mock_session.exec.return_value.all.return_value = []
+
+        results = await recipe_repo.search_by_fulltext(
+            query_text="nothing matches",
+            user_id=user_id,
+            filters=SearchFilters(),
+        )
+
+        assert results == []

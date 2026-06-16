@@ -54,7 +54,9 @@ describe('EmailFormComponent', () => {
   });
 
   it('should display email error after touching with invalid email', () => {
-    const emailInput = fixture.nativeElement.querySelector('input[type="email"]') as HTMLInputElement;
+    const emailInput = fixture.nativeElement.querySelector(
+      'input[type="email"]',
+    ) as HTMLInputElement;
     emailInput.value = 'not-an-email';
     emailInput.dispatchEvent(new Event('input'));
     emailInput.dispatchEvent(new Event('blur'));

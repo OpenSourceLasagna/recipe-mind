@@ -15,20 +15,16 @@ export const routes: Routes = [
       {
         path: 'login',
         loadComponent: () =>
-          import('./features/auth/login/login.component').then(
-            (m) => m.LoginComponent
-          ),
-        data: { mode: 'login' }
+          import('./features/auth/login/login.component').then((m) => m.LoginComponent),
+        data: { mode: 'login' },
       },
       {
         path: 'registration',
         loadComponent: () =>
-          import('./features/auth/login/login.component').then(
-            (m) => m.LoginComponent
-          ),
-        data: { mode: 'registration' }
-      }
-    ]
+          import('./features/auth/login/login.component').then((m) => m.LoginComponent),
+        data: { mode: 'registration' },
+      },
+    ],
   },
   {
     path: 'dashboard',
@@ -46,22 +42,22 @@ export const routes: Routes = [
         resolve: { _: recipeListResolver },
         loadComponent: () =>
           import('./features/dashboard/dashboard/dashboard.component').then(
-            (m) => m.DashboardComponent
+            (m) => m.DashboardComponent,
           ),
       },
-      // {
-      //   path: 'ai-chef',
-      //   loadComponent: () =>
-      //     import('./features/dashboard/placeholder/placeholder.component').then(
-      //       (m) => m.PlaceholderComponent
-      //     ),
-      //   data: { title: 'AI Chef', description: 'Let AI help you create the perfect recipe.' },
-      // },
+
+      {
+        path: 'recipes/:id',
+        loadComponent: () =>
+          import('./features/dashboard/components/recipe-detail/recipe-detail.component').then(
+            (m) => m.RecipeDetailComponent,
+          ),
+      },
       {
         path: 'add-new',
         loadComponent: () =>
           import('./features/create-recipes/recipe-creation/recipe-creation.component').then(
-            (m) => m.RecipeCreationComponent
+            (m) => m.RecipeCreationComponent,
           ),
       },
       // {
@@ -90,5 +86,5 @@ export const routes: Routes = [
       // },
     ],
   },
-  { path: '**', redirectTo: 'auth/login' }
+  { path: '**', redirectTo: 'auth/login' },
 ];

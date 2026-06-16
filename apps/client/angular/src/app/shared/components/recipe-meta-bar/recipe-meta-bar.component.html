@@ -1,0 +1,30 @@
+<div
+  class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm"
+  [class.text-muted-foreground]="!compact()"
+>
+  @if (showOrigin() && origin() && origin() !== 'Unknown') {
+    <span class="text-muted-foreground">{{ origin() }}</span>
+  }
+
+  @if (showDifficulty()) {
+    <app-recipe-difficulty-badge [difficulty]="difficulty()" />
+  }
+
+  <span class="flex items-center gap-1">
+    <ng-icon name="heroClock" [class]="iconClass" />
+    <span [class.font-medium]="!compact()" [class.text-foreground]="!compact()">
+      {{ durationMinutes() }}
+    </span>
+    <span>min</span>
+  </span>
+
+  <span class="flex items-center gap-1">
+    <ng-icon name="heroUsers" [class]="iconClass" />
+    <span [class.font-medium]="!compact()" [class.text-foreground]="!compact()">
+      {{ servings() }}
+    </span>
+    <span>servings</span>
+  </span>
+
+  <app-recipe-spice-rating [spiceLevel]="spiceLevel()" size="md" />
+</div>

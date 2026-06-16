@@ -30,10 +30,21 @@ class RecipeRepository:
     async def get_by_id(self, recipe_id: UUID) -> Recipe | None:
         return await self.a_session.get(Recipe, recipe_id)
 
+    async def update(self, recipe: Recipe) -> Recipe:
+        await self.a_session.commit()
+        await self.a_session.refresh(recipe)
+        return recipe
+
+    async def delete(self, recipe: Recipe) -> None:
+        for ing in recipe.ingredients:
+            await self.a_session.delete(ing)
+        await self.a_session.delete(recipe)
+        await self.a_session.commit()
+
     async def get_by_ids(self, ids: list[UUID]) -> list[Recipe]:
         if not ids:
             return []
-        stmt = select(Recipe).where(Recipe.id.in_(ids)) # type: ignore
+        stmt = select(Recipe).where(Recipe.id.in_(ids))  # type: ignore
         result = await self.a_session.exec(stmt)
         return list(result.all())
 
@@ -47,7 +58,7 @@ class RecipeRepository:
         conditions = self._build_filter_conditions(user_id=user_id, filters=filters)
 
         if query.query:
-            conditions.append(Recipe.title.ilike(f"%{query.query}%")) # type: ignore
+            conditions.append(Recipe.title.ilike(f"%{query.query}%"))  # type: ignore
 
         stmt = select(Recipe).where(*conditions)
 
@@ -57,10 +68,10 @@ class RecipeRepository:
 
         sort_field = query.sort_by if query.sort_by in SORT_FIELD_MAP else "created_at"
         order_column = SORT_FIELD_MAP[sort_field]
-        order_expr = ( # type: ignore
-            order_column.asc() if query.sort_order == "asc" else order_column.desc() # type: ignore
+        order_expr = (  # type: ignore
+            order_column.asc() if query.sort_order == "asc" else order_column.desc()  # type: ignore
         )
-        stmt = stmt.order_by(order_expr) # type: ignore
+        stmt = stmt.order_by(order_expr)  # type: ignore
 
         offset = (query.page - 1) * query.page_size
         stmt = stmt.offset(offset).limit(query.page_size)
@@ -141,18 +152,21 @@ class RecipeRepository:
         if filters.servings_max is not None:
             conditions.append(Recipe.servings <= filters.servings_max)
         if filters.origin:
-            conditions.append(Recipe.origin.ilike(f"%{filters.origin}%")) # type: ignore
+            conditions.append(Recipe.origin.ilike(f"%{filters.origin}%"))  # type: ignore
         if filters.ingredient_category_ids:
             target_categories = list(set(filters.ingredient_category_ids))
             category_count = len(target_categories)
 
             category_stmt = (
                 select(RecipeIngredient.recipe_id)
-                .where(RecipeIngredient.category_id.in_(target_categories)) # type: ignore
-                .group_by(RecipeIngredient.recipe_id) # type: ignore
-                .having(func.count(RecipeIngredient.category_id.distinct()) == category_count) # type: ignore
+                .where(RecipeIngredient.category_id.in_(target_categories))  # type: ignore
+                .group_by(RecipeIngredient.recipe_id)  # type: ignore
+                .having(
+                    func.count(RecipeIngredient.category_id.distinct())
+                    == category_count
+                )  # type: ignore
             )
 
-            conditions.append(Recipe.id.in_(category_stmt)) # type: ignore
+            conditions.append(Recipe.id.in_(category_stmt))  # type: ignore
 
         return conditions

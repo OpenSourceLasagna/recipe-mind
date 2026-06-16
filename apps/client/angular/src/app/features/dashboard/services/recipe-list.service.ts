@@ -17,9 +17,7 @@ export class RecipeListService {
   readonly recipes = resource<RecipeListDto, HttpParams>({
     params: () => this.#filterService.toHttpParams(),
     loader: ({ params }) =>
-      firstValueFrom(
-        this.#http.get<RecipeListDto>(this.#baseUrl, { params }),
-      ),
+      firstValueFrom(this.#http.get<RecipeListDto>(this.#baseUrl, { params })),
   });
 
   preload(): void {

@@ -50,9 +50,7 @@ class TestRecipeIngredientRepository:
         mock_session.exec.assert_called_once()
         assert result == expected
 
-    async def test_get_centroids(
-        self, ingredient_repo, mock_session, make_ingredient
-    ):
+    async def test_get_centroids(self, ingredient_repo, mock_session, make_ingredient):
         expected = [make_ingredient(category_id=uuid4())]
         mock_session.exec.return_value.all.return_value = expected
 
@@ -61,9 +59,7 @@ class TestRecipeIngredientRepository:
         mock_session.exec.assert_called_once()
         assert result == expected
 
-    async def test_bulk_update_categories(
-        self, ingredient_repo, mock_session
-    ):
+    async def test_bulk_update_categories(self, ingredient_repo, mock_session):
         ing_id_1, cat_id_1 = uuid4(), uuid4()
         ing_id_2, cat_id_2 = uuid4(), uuid4()
         mappings = [(ing_id_1, cat_id_1), (ing_id_2, cat_id_2)]
@@ -78,9 +74,7 @@ class TestRecipeIngredientRepository:
         await ingredient_repo.bulk_update_categories([])
         mock_session.exec.assert_not_called()
 
-    async def test_get_uncategorized_empty(
-        self, ingredient_repo, mock_session
-    ):
+    async def test_get_uncategorized_empty(self, ingredient_repo, mock_session):
         mock_session.exec.return_value.all.return_value = []
 
         result = await ingredient_repo.get_uncategorized()
@@ -96,9 +90,7 @@ class TestRecipeIngredientRepository:
 
         assert result == []
 
-    async def test_get_centroids_empty(
-        self, ingredient_repo, mock_session
-    ):
+    async def test_get_centroids_empty(self, ingredient_repo, mock_session):
         mock_session.exec.return_value.all.return_value = []
 
         result = await ingredient_repo.get_centroids()

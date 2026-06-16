@@ -16,7 +16,14 @@ import type { ChangeFn, TouchFn } from '@spartan-ng/brain/forms';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <input hlmInput class="w-full" [value]="value() ?? ''" (input)="onInput($event)" (blur)="onTouched()" placeholder="e.g. Italian, Mexican..." />
+    <input
+      hlmInput
+      class="w-full"
+      [value]="value() ?? ''"
+      (input)="onInput($event)"
+      (blur)="onTouched()"
+      placeholder="e.g. Italian, Mexican..."
+    />
   `,
 })
 export class FilterOriginComponent implements ControlValueAccessor {

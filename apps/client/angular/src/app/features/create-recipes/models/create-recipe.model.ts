@@ -1,4 +1,4 @@
-import { Difficulty } from "./difficulty.model";
+import { Difficulty } from './difficulty.model';
 
 export interface CreateIngredientRequest {
   ingredientName: string;

@@ -11,8 +11,7 @@ export class CreationMethodBoxComponent {
   readonly active = input<boolean>(false);
   readonly click = output<void>();
 
-
   onClick() {
-    this.click.emit()
+    this.click.emit();
   }
 }

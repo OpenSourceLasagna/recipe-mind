@@ -17,9 +17,13 @@ import type { Difficulty } from '../../../create-recipes/models/difficulty.model
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div hlmToggleGroup type="single" [nullable]="true"
+    <div
+      hlmToggleGroup
+      type="single"
+      [nullable]="true"
       [value]="value()"
-      (valueChange)="onSelect($event)">
+      (valueChange)="onSelect($event)"
+    >
       <button hlmToggleGroupItem value="easy" class="capitalize">Easy</button>
       <button hlmToggleGroupItem value="medium" class="capitalize">Medium</button>
       <button hlmToggleGroupItem value="hard" class="capitalize">Hard</button>

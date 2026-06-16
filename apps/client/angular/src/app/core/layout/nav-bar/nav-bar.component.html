@@ -1,5 +1,7 @@
 <!-- Desktop Top Nav -->
-<nav class="hidden md:flex items-center justify-between border-b border-border bg-background px-6 h-14 mb-4">
+<nav
+  class="hidden md:flex items-center justify-between border-b border-border bg-background px-6 h-14 mb-4"
+>
   <div class="flex items-center gap-8">
     <a routerLink="/dashboard" class="text-lg font-bold text-foreground whitespace-nowrap">
       CulinarAI
@@ -8,7 +10,11 @@
       <ul hlmNavigationMenuList>
         @for (item of navItems; track item.route) {
           <li hlmNavigationMenuItem>
-            <a hlmNavigationMenuLink [routerLink]="item.route" [active]="activeStates[item.route]()">
+            <a
+              hlmNavigationMenuLink
+              [routerLink]="item.route"
+              [active]="activeStates[item.route]()"
+            >
               {{ item.label }}
             </a>
           </li>
@@ -16,17 +22,29 @@
       </ul>
     </nav>
   </div>
-  <button hlmBtn variant="ghost" size="icon-lg" aria-label="Profile" [hlmDropdownMenuTrigger]="profileMenu">
+  <button
+    hlmBtn
+    variant="ghost"
+    size="icon-lg"
+    aria-label="Profile"
+    [hlmDropdownMenuTrigger]="profileMenu"
+  >
     <ng-icon name="profile" class="text-3xl" />
   </button>
 </nav>
 
 <!-- Mobile Top Bar -->
-<div class="flex md:hidden items-center justify-between border-b border-border bg-background px-4 h-14 mb-4">
-  <a routerLink="/dashboard" class="text-lg font-bold text-foreground">
-    CulinarAI
-  </a>
-  <button hlmBtn variant="ghost" size="icon-lg" aria-label="Profile" [hlmDropdownMenuTrigger]="profileMenu">
+<div
+  class="flex md:hidden items-center justify-between border-b border-border bg-background px-4 h-14 mb-4"
+>
+  <a routerLink="/dashboard" class="text-lg font-bold text-foreground"> CulinarAI </a>
+  <button
+    hlmBtn
+    variant="ghost"
+    size="icon-lg"
+    aria-label="Profile"
+    [hlmDropdownMenuTrigger]="profileMenu"
+  >
     <ng-icon name="profile" class="text-3xl" />
   </button>
 </div>

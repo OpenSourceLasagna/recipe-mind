@@ -1,6 +1,10 @@
 <div class="flex flex-wrap items-center gap-2">
   <hlm-popover>
-    <button hlmBtn variant="outline" size="sm" hlmPopoverTrigger
+    <button
+      hlmBtn
+      variant="outline"
+      size="sm"
+      hlmPopoverTrigger
       [class.bg-primary]="filter.model().difficulty"
       [class.text-primary-foreground]="filter.model().difficulty"
     >
@@ -13,7 +17,11 @@
   </hlm-popover>
 
   <hlm-popover>
-    <button hlmBtn variant="outline" size="sm" hlmPopoverTrigger
+    <button
+      hlmBtn
+      variant="outline"
+      size="sm"
+      hlmPopoverTrigger
       [class.bg-primary]="filter.model().spiceMax"
       [class.text-primary-foreground]="filter.model().spiceMax"
     >
@@ -29,35 +37,70 @@
   </hlm-popover>
 
   <hlm-popover>
-    <button hlmBtn variant="outline" size="sm" hlmPopoverTrigger
-      [class.bg-primary]="filter.model().duration[0] > durationRange[0] || filter.model().duration[1] < durationRange[1]"
-      [class.text-primary-foreground]="filter.model().duration[0] > durationRange[0] || filter.model().duration[1] < durationRange[1]"
+    <button
+      hlmBtn
+      variant="outline"
+      size="sm"
+      hlmPopoverTrigger
+      [class.bg-primary]="
+        filter.model().duration[0] > durationRange[0] ||
+        filter.model().duration[1] < durationRange[1]
+      "
+      [class.text-primary-foreground]="
+        filter.model().duration[0] > durationRange[0] ||
+        filter.model().duration[1] < durationRange[1]
+      "
     >
       Duration
       <ng-icon hlm size="sm" name="heroChevronDown" class="ml-1" />
     </button>
     <hlm-popover-content *hlmPopoverPortal>
-      <app-filter-slider-range [formField]="filter.form.duration"
-        [sliderMin]="durationRange[0]" [sliderMax]="durationRange[1]" [step]="5" unit="min" label="Duration" />
+      <app-filter-slider-range
+        [formField]="filter.form.duration"
+        [sliderMin]="durationRange[0]"
+        [sliderMax]="durationRange[1]"
+        [step]="5"
+        unit="min"
+        label="Duration"
+      />
     </hlm-popover-content>
   </hlm-popover>
 
   <hlm-popover>
-    <button hlmBtn variant="outline" size="sm" hlmPopoverTrigger
-      [class.bg-primary]="filter.model().servings[0] > servingsRange[0] || filter.model().servings[1] < servingsRange[1]"
-      [class.text-primary-foreground]="filter.model().servings[0] > servingsRange[0] || filter.model().servings[1] < servingsRange[1]"
+    <button
+      hlmBtn
+      variant="outline"
+      size="sm"
+      hlmPopoverTrigger
+      [class.bg-primary]="
+        filter.model().servings[0] > servingsRange[0] ||
+        filter.model().servings[1] < servingsRange[1]
+      "
+      [class.text-primary-foreground]="
+        filter.model().servings[0] > servingsRange[0] ||
+        filter.model().servings[1] < servingsRange[1]
+      "
     >
       Servings
       <ng-icon hlm size="sm" name="heroChevronDown" class="ml-1" />
     </button>
     <hlm-popover-content *hlmPopoverPortal>
-      <app-filter-slider-range [formField]="filter.form.servings"
-        [sliderMin]="servingsRange[0]" [sliderMax]="servingsRange[1]" [step]="1" label="Servings" />
+      <app-filter-slider-range
+        [formField]="filter.form.servings"
+        [sliderMin]="servingsRange[0]"
+        [sliderMax]="servingsRange[1]"
+        [step]="1"
+        label="Servings"
+      />
     </hlm-popover-content>
   </hlm-popover>
 
   <hlm-popover>
-    <button hlmBtn variant="outline" size="sm" hlmPopoverTrigger
+    <button
+      hlmBtn
+      variant="outline"
+      size="sm"
+      hlmPopoverTrigger
       [class.bg-primary]="filter.model().origin"
       [class.text-primary-foreground]="filter.model().origin"
     >
@@ -70,7 +113,11 @@
   </hlm-popover>
 
   <hlm-popover>
-    <button hlmBtn variant="outline" size="sm" hlmPopoverTrigger
+    <button
+      hlmBtn
+      variant="outline"
+      size="sm"
+      hlmPopoverTrigger
       [class.bg-primary]="filter.model().categories"
       [class.text-primary-foreground]="filter.model().categories"
     >
@@ -83,5 +130,4 @@
   </hlm-popover>
 
   <app-filter-sort [value]="filter.sortValue()" (valueChange)="filter.setSortValue($event)" />
- 
 </div>

@@ -28,7 +28,9 @@ class RerankingService:
         if not scored:
             return []
 
-        recipe_corpus = [self._recipe_preprocessor.to_rerank_markdown(r.recipe) for r in scored]
+        recipe_corpus = [
+            self._recipe_preprocessor.to_rerank_markdown(r.recipe) for r in scored
+        ]
         ranks = self._model.rank(query, recipe_corpus)  # type: ignore
 
         results: list[Recipe] = []

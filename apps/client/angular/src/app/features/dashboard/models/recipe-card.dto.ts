@@ -1,4 +1,4 @@
-import { Difficulty } from "../../create-recipes/models/difficulty.model";
+import { Difficulty } from '../../create-recipes/models/difficulty.model';
 
 export interface RecipeCardDto {
   id: string;

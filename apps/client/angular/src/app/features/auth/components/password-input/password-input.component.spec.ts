@@ -52,7 +52,9 @@ describe('PasswordInputComponent', () => {
   it('should show error messages when invalid and touched', () => {
     fixture.componentRef.setInput('invalid', true);
     fixture.componentRef.setInput('touched', true);
-    fixture.componentRef.setInput('errors', [{ message: 'Password is required', kind: 'required' }]);
+    fixture.componentRef.setInput('errors', [
+      { message: 'Password is required', kind: 'required' },
+    ]);
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Password is required');
   });

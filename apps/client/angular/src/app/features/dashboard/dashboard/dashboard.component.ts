@@ -12,6 +12,9 @@ import { RecipeCardComponent } from '../components/recipe-card/recipe-card.compo
 import { RecipeFilterSheetComponent } from '../components/filter-sheet/filter-sheet.component';
 import { FilterBarComponent } from '../components/filter-bar/filter-bar.component';
 import { RecipeSearchBarComponent } from '../components/recipe-search-bar/recipe-search-bar.component';
+import { ChatButtonComponent } from '../../chat/components/chat-button/chat-button.component';
+import { ChatPanelComponent } from '../../chat/components/chat-panel/chat-panel.component';
+import { ChatStore } from '../../chat/chat.store';
 
 @Component({
   selector: 'app-dashboard',
@@ -21,6 +24,8 @@ import { RecipeSearchBarComponent } from '../components/recipe-search-bar/recipe
     RecipeFilterSheetComponent,
     FilterBarComponent,
     RecipeSearchBarComponent,
+    ChatButtonComponent,
+    ChatPanelComponent,
     HlmCardImports,
     HlmSkeletonImports,
     NgIcon,
@@ -36,6 +41,7 @@ export class DashboardComponent implements OnInit {
   readonly #route = inject(ActivatedRoute);
   readonly #platformId = inject(PLATFORM_ID);
   readonly filter = inject(RecipeFilterService);
+  readonly chat = inject(ChatStore);
 
   readonly Error = Error;
   readonly recipes = this.#recipeList.recipes;

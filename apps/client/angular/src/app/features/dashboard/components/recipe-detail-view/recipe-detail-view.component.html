@@ -1,0 +1,402 @@
+<div class="max-w-3xl mx-auto px-4 py-6 space-y-8">
+  <!-- ── Header bar ── -->
+  <div class="flex items-center justify-between">
+    <button
+      hlmBtn
+      variant="ghost"
+      size="sm"
+      type="button"
+      class="gap-1.5"
+      (click)="backClick.emit()"
+    >
+      <ng-icon hlm name="heroArrowLeft" />
+      <span class="hidden sm:inline">Back</span>
+    </button>
+
+    <div class="flex items-center gap-2">
+      @if (isOwner() && !isEditing()) {
+        <button
+          hlmBtn
+          variant="outline"
+          size="sm"
+          class="gap-1.5"
+          type="button"
+          (click)="editClick.emit()"
+        >
+          <ng-icon hlm name="heroPencil" />
+          <span class="hidden sm:inline">Edit</span>
+        </button>
+      }
+      <button
+        hlmBtn
+        variant="outline"
+        size="icon"
+        type="button"
+        aria-label="Open AI Chef"
+        (click)="chatClick.emit()"
+      >
+        <ng-icon hlm name="heroSparkles" />
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Title section ── -->
+  <div class="space-y-3">
+    @if (!isEditing()) {
+      <div class="flex flex-wrap items-center gap-2">
+        <hlm-badge variant="secondary" class="text-xs">
+          {{ activeRecipe().origin }}
+        </hlm-badge>
+        <app-recipe-difficulty-badge [difficulty]="activeRecipe().difficulty" />
+      </div>
+
+      <h1 class="text-3xl font-bold tracking-tight">
+        {{ activeRecipe().title }}
+      </h1>
+    } @else {
+      <hlm-field>
+        <label hlmFieldLabel for="edit-title">Recipe Title</label>
+        <input hlmInput id="edit-title" type="text" [formField]="editForm.title" />
+        @if (editForm.title().invalid() && editForm.title().touched()) {
+          <hlm-field-error>Title is required</hlm-field-error>
+        }
+      </hlm-field>
+    }
+
+    <!-- Version toggle (only when a modified variant exists) -->
+    @if (hasModified() && !isEditing()) {
+      <div class="inline-flex rounded-lg bg-muted p-1" role="group" aria-label="Recipe version">
+        <button
+          type="button"
+          class="relative px-3 py-1.5 text-sm font-medium rounded-md transition-all"
+          [class.bg-background]="viewMode() === 'original'"
+          [class.text-foreground]="viewMode() === 'original'"
+          [class.shadow-sm]="viewMode() === 'original'"
+          [class.text-muted-foreground]="viewMode() !== 'original'"
+          (click)="setViewMode('original')"
+        >
+          Original
+        </button>
+        <button
+          type="button"
+          class="relative px-3 py-1.5 text-sm font-medium rounded-md transition-all inline-flex items-center gap-1.5"
+          [class.bg-background]="viewMode() === 'modified'"
+          [class.text-foreground]="viewMode() === 'modified'"
+          [class.shadow-sm]="viewMode() === 'modified'"
+          [class.text-muted-foreground]="viewMode() !== 'modified'"
+          (click)="setViewMode('modified')"
+        >
+          Modified
+          @if (changedFields().size > 0) {
+            <span class="inline-block size-1.5 rounded-full bg-primary" aria-hidden="true"></span>
+          }
+        </button>
+      </div>
+    }
+  </div>
+
+  <!-- ── Meta bar ── -->
+  @if (!isEditing()) {
+    <app-recipe-meta-bar
+      [difficulty]="activeRecipe().difficulty"
+      [durationMinutes]="activeRecipe().durationMinutes"
+      [servings]="activeRecipe().servings"
+      [spiceLevel]="activeRecipe().spiceLevel"
+      [showDifficulty]="false"
+      [class.border-l-2]="metaChanged() && viewMode() === 'modified'"
+      [class.border-primary]="metaChanged() && viewMode() === 'modified'"
+      [class.bg-primary]="metaChanged() && viewMode() === 'modified'"
+      [class.rounded-r-md]="metaChanged() && viewMode() === 'modified'"
+      [class.pl-3]="metaChanged() && viewMode() === 'modified'"
+      [class.py-1]="metaChanged() && viewMode() === 'modified'"
+      [class.bg-opacity-5]="metaChanged() && viewMode() === 'modified'"
+    />
+  } @else {
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <hlm-field>
+        <label hlmFieldLabel>Servings</label>
+        <input hlmInput type="number" step="1" [formField]="editForm.servings" />
+      </hlm-field>
+      <hlm-field>
+        <label hlmFieldLabel>Duration (min)</label>
+        <input hlmInput type="number" step="5" [formField]="editForm.durationMinutes" />
+      </hlm-field>
+      <hlm-field>
+        <label hlmFieldLabel>Spice Level</label>
+        <div class="flex items-center gap-3">
+          <input
+            type="range"
+            class="w-full accent-primary"
+            min="1"
+            max="5"
+            step="1"
+            [value]="editForm.spiceLevel().value()"
+            (input)="editForm.spiceLevel().value.set(+$any($event.target).value)"
+          />
+          <span class="text-sm font-medium w-4 text-center">
+            {{ editForm.spiceLevel().value() }}
+          </span>
+        </div>
+      </hlm-field>
+      <hlm-field>
+        <label hlmFieldLabel>Origin</label>
+        <input hlmInput type="text" [formField]="editForm.origin" />
+      </hlm-field>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <hlm-field>
+        <label hlmFieldLabel>Difficulty</label>
+        <div class="flex gap-2">
+          @for (level of DIFFICULTIES; track level) {
+            <button
+              type="button"
+              class="flex-1 rounded-md border px-3 py-2 text-sm capitalize transition"
+              [class.border-primary]="editForm.difficulty().value() === level"
+              [class.bg-primary-5]="editForm.difficulty().value() === level"
+              [class.text-foreground]="editForm.difficulty().value() === level"
+              [class.text-muted-foreground]="editForm.difficulty().value() !== level"
+              (click)="editForm.difficulty().value.set(level)"
+            >
+              {{ level }}
+            </button>
+          }
+        </div>
+      </hlm-field>
+    </div>
+  }
+
+  <hlm-separator />
+
+  <!-- ── Ingredients ── -->
+  <section
+    class="space-y-3"
+    [class.border-l-2]="ingredientsChanged() && viewMode() === 'modified'"
+    [class.border-primary]="ingredientsChanged() && viewMode() === 'modified'"
+    [class.bg-primary]="ingredientsChanged() && viewMode() === 'modified'"
+    [class.rounded-r-md]="ingredientsChanged() && viewMode() === 'modified'"
+    [class.pl-3]="ingredientsChanged() && viewMode() === 'modified'"
+    [class.py-1]="ingredientsChanged() && viewMode() === 'modified'"
+    [class.bg-opacity-5]="ingredientsChanged() && viewMode() === 'modified'"
+  >
+    <div class="flex items-center gap-2">
+      <h2 class="text-lg font-semibold">Ingredients</h2>
+      @if (ingredientsChanged() && viewMode() === 'modified') {
+        <span class="size-1.5 rounded-full bg-primary" aria-hidden="true"></span>
+      }
+    </div>
+
+    @if (!isEditing()) {
+      <ul class="space-y-2">
+        @for (item of activeRecipe().ingredients; track item.id) {
+          <li class="flex items-baseline gap-3 text-sm">
+            <span class="font-semibold tabular-nums w-12 text-right">{{ item.quantity }}</span>
+            <span class="text-muted-foreground w-16">{{ item.unit }}</span>
+            <span class="text-foreground">{{ item.ingredientName }}</span>
+          </li>
+        }
+      </ul>
+    } @else {
+      <app-recipe-ingredients-edit
+        [(ingredients)]="editIngredients"
+        [(touched)]="editIngredientsTouched"
+        [showError]="editIngredientsTouched() && !editIngredientsAreValid()"
+        [errorMessage]="'All ingredients must have a name and a quantity higher than 0'"
+      />
+    }
+  </section>
+
+  <hlm-separator />
+
+  <!-- ── Instructions ── -->
+  <section
+    class="space-y-3"
+    [class.border-l-2]="instructionsChanged() && viewMode() === 'modified'"
+    [class.border-primary]="instructionsChanged() && viewMode() === 'modified'"
+    [class.bg-primary]="instructionsChanged() && viewMode() === 'modified'"
+    [class.rounded-r-md]="instructionsChanged() && viewMode() === 'modified'"
+    [class.pl-3]="instructionsChanged() && viewMode() === 'modified'"
+    [class.py-1]="instructionsChanged() && viewMode() === 'modified'"
+    [class.bg-opacity-5]="instructionsChanged() && viewMode() === 'modified'"
+  >
+    <div class="flex items-center gap-2">
+      <h2 class="text-lg font-semibold">Instructions</h2>
+      @if (instructionsChanged() && viewMode() === 'modified') {
+        <span class="size-1.5 rounded-full bg-primary" aria-hidden="true"></span>
+      }
+    </div>
+
+    @if (!isEditing()) {
+      <ol class="space-y-4">
+        @for (step of activeRecipe().instructionSteps; track $index) {
+          <li class="flex gap-3 text-sm">
+            <span
+              class="flex-none flex items-center justify-center size-7 rounded-full bg-muted text-xs font-semibold text-muted-foreground"
+            >
+              {{ $index + 1 }}
+            </span>
+            <span class="text-foreground leading-relaxed">{{ step }}</span>
+          </li>
+        }
+      </ol>
+    } @else {
+      <div class="space-y-2">
+        @for (step of editInstructions(); track $index) {
+          <div class="flex items-start gap-2">
+            <span
+              class="flex-none flex items-center justify-center size-7 rounded-full bg-muted text-xs font-semibold text-muted-foreground mt-2"
+            >
+              {{ $index + 1 }}
+            </span>
+            <textarea
+              hlmTextarea
+              class="flex-1 min-h-[60px]"
+              placeholder="Step {{ $index + 1 }}"
+              [value]="step"
+              (input)="updateInstruction($index, $any($event.target).value)"
+            ></textarea>
+            <button
+              hlmBtn
+              variant="ghost"
+              size="icon"
+              type="button"
+              class="mt-1.5"
+              (click)="removeInstruction($index)"
+            >
+              <ng-icon hlm name="heroTrash" />
+            </button>
+          </div>
+        }
+        <button
+          hlmBtn
+          variant="outline"
+          size="sm"
+          type="button"
+          class="gap-1.5"
+          (click)="addInstruction()"
+        >
+          <ng-icon hlm name="heroPlus" />
+          Add Step
+        </button>
+      </div>
+    }
+  </section>
+
+  <hlm-separator />
+
+  <!-- ── Nutrition (collapsible) ── -->
+  @if (hasNutrition()) {
+    <hlm-collapsible class="space-y-2">
+      <div class="flex items-center gap-2">
+        <button hlmCollapsibleTrigger hlmBtn variant="ghost" size="sm" class="gap-1.5 -ml-2">
+          <ng-icon hlm name="heroChevronDown" />
+          <span class="text-lg font-semibold">Nutrition</span>
+        </button>
+        @if (nutritionChanged() && viewMode() === 'modified') {
+          <span class="size-1.5 rounded-full bg-primary" aria-hidden="true"></span>
+        }
+      </div>
+
+      <hlm-collapsible-content>
+        <div
+          class="grid grid-cols-2 sm:grid-cols-3 gap-3"
+          [class.border-l-2]="nutritionChanged() && viewMode() === 'modified'"
+          [class.border-primary]="nutritionChanged() && viewMode() === 'modified'"
+          [class.bg-primary]="nutritionChanged() && viewMode() === 'modified'"
+          [class.rounded-r-md]="nutritionChanged() && viewMode() === 'modified'"
+          [class.pl-3]="nutritionChanged() && viewMode() === 'modified'"
+          [class.py-1]="nutritionChanged() && viewMode() === 'modified'"
+          [class.bg-opacity-5]="nutritionChanged() && viewMode() === 'modified'"
+        >
+          @for (entry of nutritionEntries(); track entry.key) {
+            <div class="rounded-lg border p-3">
+              <div class="text-xs text-muted-foreground uppercase tracking-wider">
+                {{ entry.key }}
+              </div>
+              <div class="text-lg font-semibold">{{ entry.value }}</div>
+            </div>
+          }
+        </div>
+      </hlm-collapsible-content>
+    </hlm-collapsible>
+
+    <hlm-separator />
+  }
+
+  <!-- ── Additional Information ── -->
+  @if (hasAdditionalInfo()) {
+    <section
+      class="space-y-3"
+      [class.border-l-2]="additionalInfoChanged() && viewMode() === 'modified'"
+      [class.border-primary]="additionalInfoChanged() && viewMode() === 'modified'"
+      [class.bg-primary]="additionalInfoChanged() && viewMode() === 'modified'"
+      [class.rounded-r-md]="additionalInfoChanged() && viewMode() === 'modified'"
+      [class.pl-3]="additionalInfoChanged() && viewMode() === 'modified'"
+      [class.py-1]="additionalInfoChanged() && viewMode() === 'modified'"
+      [class.bg-opacity-5]="additionalInfoChanged() && viewMode() === 'modified'"
+    >
+      <div class="flex items-center gap-2">
+        <h2 class="text-lg font-semibold">Additional Information</h2>
+        @if (additionalInfoChanged() && viewMode() === 'modified') {
+          <span class="size-1.5 rounded-full bg-primary" aria-hidden="true"></span>
+        }
+      </div>
+
+      @if (!isEditing()) {
+        <ul class="list-disc list-inside space-y-1 text-sm text-foreground">
+          @for (item of activeRecipe().additionalInformation; track $index) {
+            <li>{{ item }}</li>
+          }
+        </ul>
+      } @else {
+        <div class="space-y-2">
+          @for (item of editAdditionalInfo(); track $index) {
+            <div class="flex items-start gap-2">
+              <textarea
+                hlmTextarea
+                class="flex-1 min-h-[40px]"
+                placeholder="Additional note"
+                [value]="item"
+                (input)="updateAdditionalInfo($index, $any($event.target).value)"
+              ></textarea>
+              <button
+                hlmBtn
+                variant="ghost"
+                size="icon"
+                type="button"
+                class="mt-1.5"
+                (click)="removeAdditionalInfo($index)"
+              >
+                <ng-icon hlm name="heroTrash" />
+              </button>
+            </div>
+          }
+          <button
+            hlmBtn
+            variant="outline"
+            size="sm"
+            type="button"
+            class="gap-1.5"
+            (click)="addAdditionalInfo()"
+          >
+            <ng-icon hlm name="heroPlus" />
+            Add Note
+          </button>
+        </div>
+      }
+    </section>
+  }
+
+  <!-- ── Edit actions ── -->
+  @if (isEditing()) {
+    <div class="flex items-center justify-end gap-3 pt-4">
+      <button hlmBtn variant="outline" type="button" (click)="cancelEditClick.emit()">
+        Cancel
+      </button>
+      <button hlmBtn type="button" (click)="onSave()">
+        <ng-icon hlm name="heroCheck" class="mr-1.5" />
+        Save Changes
+      </button>
+    </div>
+  }
+</div>

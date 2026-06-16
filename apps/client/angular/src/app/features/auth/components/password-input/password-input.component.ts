@@ -11,7 +11,7 @@ import { HlmInputGroupImports } from '@spartan-ng/helm/input-group';
   providers: [provideIcons({ eye: heroEye, eyeSlash: heroEyeSlash })],
   templateUrl: './password-input.component.html',
   styleUrl: './password-input.component.css',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PasswordInputComponent implements FormValueControl<string> {
   value = model('');

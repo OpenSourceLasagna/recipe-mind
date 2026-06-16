@@ -1,0 +1,82 @@
+<div class="flex h-full flex-col bg-background">
+  <div class="flex items-center justify-between border-b border-border px-4 py-3">
+    <div class="flex items-center gap-2">
+      <ng-icon hlm name="heroSparkles" class="text-primary" />
+      <span class="font-semibold text-sm">AI Chef</span>
+    </div>
+    <button
+      hlmBtn
+      variant="ghost"
+      size="icon"
+      type="button"
+      aria-label="Close chat"
+      (click)="store.close()"
+    >
+      <ng-icon hlm name="heroXMark" />
+    </button>
+  </div>
+
+  <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4" #scrollContainer>
+    @if (!store.hasMessages()) {
+      <div
+        class="flex h-full flex-col items-center justify-center text-muted-foreground text-sm gap-2"
+      >
+        <ng-icon hlm name="heroSparkles" class="text-3xl" />
+        <p>Ask the AI Chef anything about recipes!</p>
+      </div>
+    }
+
+    @for (msg of messages(); track msg.id) {
+      <app-chat-message [message]="msg" [isPending]="msg.isPending ?? false" />
+    }
+
+    @if (loadingStatus(); as status) {
+      @if (status.isLoading) {
+        <div class="flex justify-start my-2">
+          <div class="flex items-center gap-1.5 text-muted-foreground">
+            <div
+              class="size-1 animate-bounce rounded-full bg-muted-foreground"
+              style="animation-delay: 0ms"
+            ></div>
+            <div
+              class="size-1 animate-bounce rounded-full bg-muted-foreground"
+              style="animation-delay: 150ms"
+            ></div>
+            <div
+              class="size-1 animate-bounce rounded-full bg-muted-foreground"
+              style="animation-delay: 300ms"
+            ></div>
+            @if (status.message) {
+              <p class="mx-3">{{ status.message }}</p>
+            }
+          </div>
+        </div>
+      }
+    }
+  </div>
+
+  <div class="border-t border-border px-4 py-3">
+    <form class="flex items-end gap-2" (submit)="send($event)">
+      <input
+        hlmInput
+        class="flex-1 resize-none"
+        type="text"
+        placeholder="Ask the AI Chef..."
+        [(ngModel)]="inputValue"
+        name="chatInput"
+        autocomplete="off"
+        (keydown.enter)="send($event)"
+      />
+      <button
+        hlmBtn
+        variant="default"
+        size="icon"
+        type="submit"
+        [disabled]="!canSend()"
+        aria-label="Send message"
+      >
+        <ng-icon hlm name="heroPaperAirplane" />
+      </button>
+    </form>
+  </div>
+</div>
