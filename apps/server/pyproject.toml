@@ -5,7 +5,7 @@ description = "Recipe Mind backend API with Supabase and RAG-powered search"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "fastapi[standard]>=0.136.1",
+    "fastapi[standard]>=0.137.0",
     "ruff>=0.15.13",
     "supabase>=2.30.0",
     "pydantic>=2.0.0",
@@ -19,14 +19,14 @@ dependencies = [
     "pgvector>=0.4.2",
     "asyncpg>=0.31.0",
     "sentence-transformers>=5.5.1",
-    "pytest>=9.0.3",
+    "pytest>=9.1.0",
     "httpx>=0.28.1",
     "pytest-asyncio>=1.4.0",
-    "pip-audit>=2.8.0",
+    "pip-audit>=2.10.1",
     "nltk>=3.9.4",
-    "scikit-learn>=1.6.0",
+    "scikit-learn>=1.9.0",
     "transformers>=4.40.0",
-    "optimum[onnxruntime]>=2.1.0",
+    "optimum[onnxruntime]>=2.2.0",
 ]
 
 [tool.pytest.ini_options]
