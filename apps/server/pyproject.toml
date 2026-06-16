@@ -5,7 +5,7 @@ description = "Recipe Mind backend API with Supabase and RAG-powered search"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "fastapi[standard]>=0.136.1",
+    "fastapi[standard]>=0.137.0",
     "ruff>=0.15.13",
     "supabase>=2.30.0",
     "pydantic>=2.0.0",
