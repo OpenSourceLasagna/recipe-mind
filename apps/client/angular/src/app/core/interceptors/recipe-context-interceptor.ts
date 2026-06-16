@@ -1,6 +1,6 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { RecipeDetailService } from '../../features/dashboard/services/recipe-detail.service';
+import { ChatStore } from '../../features/chat/chat.store';
 import { environment } from '../../../environments/environment';
 
 export const recipeContextInterceptor: HttpInterceptorFn = (req, next) => {
@@ -11,7 +11,7 @@ export const recipeContextInterceptor: HttpInterceptorFn = (req, next) => {
     return next(req);
   }
 
-  const recipeId = inject(RecipeDetailService).currentRecipeId();
+  const recipeId = inject(ChatStore).effectiveContextRecipeId();
   if (!recipeId) return next(req);
 
   const body = req.body as Record<string, unknown> | null;
@@ -25,7 +25,7 @@ export const recipeContextInterceptor: HttpInterceptorFn = (req, next) => {
 };
 
 export const createFetchRecipeContextInterceptor = () => {
-  const recipeDetailService = inject(RecipeDetailService);
+  const chatStore = inject(ChatStore);
 
   return (...args: Parameters<typeof fetch>): Parameters<typeof fetch> => {
     let [input, init = {}] = args;
@@ -36,7 +36,7 @@ export const createFetchRecipeContextInterceptor = () => {
       return args;
     }
 
-    const currentRecipeId = recipeDetailService.currentRecipeId();
+    const currentRecipeId = chatStore.effectiveContextRecipeId();
 
     if (!currentRecipeId) {
       return args;

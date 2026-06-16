@@ -19,11 +19,22 @@ import { ChatStore } from '../../chat.store';
 import { ChatService } from '../../chat.service';
 import { ChatMessageComponent } from '../chat-message/chat-message.component';
 import { PanelChatMessage } from '../../models/chat-message.model';
+import { ContextRecipeCardComponent } from '../context-recipe-card/context-recipe-card.component';
+import { RecipeResponse } from '../../../dashboard/models/recipe.model';
+import { RecipeDetailService } from '../../../dashboard/services/recipe-detail.service';
+import { RecipePatchRequest } from '../../../dashboard/models/recipe-edit.model';
 
 @Component({
   selector: 'app-chat-panel',
   standalone: true,
-  imports: [FormsModule, HlmButton, HlmInput, NgIcon, ChatMessageComponent],
+  imports: [
+    FormsModule,
+    HlmButton,
+    HlmInput,
+    NgIcon,
+    ChatMessageComponent,
+    ContextRecipeCardComponent,
+  ],
   providers: [provideIcons({ heroXMark, heroSparkles, heroPaperAirplane })],
   templateUrl: './chat-panel.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -31,6 +42,7 @@ import { PanelChatMessage } from '../../models/chat-message.model';
 export class ChatPanelComponent {
   readonly store = inject(ChatStore);
   readonly #service = inject(ChatService);
+  readonly #detailService = inject(RecipeDetailService);
 
   readonly inputValue = model('');
 
@@ -41,6 +53,9 @@ export class ChatPanelComponent {
   readonly #history = this.store.messages;
   readonly #pendingMessage = this.#service.stream.value;
   readonly #storeLoading = this.store.isLoading;
+
+  readonly contextRecipeId = this.store.contextRecipeId;
+  readonly contextExcluded = this.store.contextExcluded;
 
   readonly loadingStatus = computed<{ isLoading: boolean; message?: string }>(() => {
     const status = this.#pendingMessage()?.status;
@@ -83,6 +98,62 @@ export class ChatPanelComponent {
 
     this.inputValue.set('');
     this.#service.sendMessage(text);
+  }
+
+  close(): void {
+    if (this.store.hasUnsavedRecipeChanges()) {
+      const confirmed = confirm(
+        'You have unsaved recipe changes. Are you sure you want to close the chat?',
+      );
+      if (!confirmed) return;
+    }
+    this.store.close();
+  }
+
+  toggleContextExcluded(): void {
+    this.store.toggleContextExcluded();
+  }
+
+  expandContextRecipe(): void {
+    const recipeId = this.contextRecipeId();
+    if (!recipeId) return;
+
+    const recipe = this.#detailService.recipe.value();
+    if (!recipe) return;
+
+    const originalRecipe = recipe as unknown as RecipeResponse;
+    const modifiedRecipe = recipe.modifiedRecipe as unknown as RecipeResponse | undefined;
+
+    this.store.expandRecipe(originalRecipe, modifiedRecipe);
+  }
+
+  onRecipeCardExpand(recipe: RecipeResponse): void {
+    this.store.expandRecipe(recipe);
+  }
+
+  onCollapseClick(messageId: number): void {
+    this.store.collapseRecipe(messageId);
+  }
+
+  onCloseClick(messageId: number): void {
+    this.store.collapseRecipe(messageId);
+  }
+
+  onEditClick(messageId: number): void {
+    this.store.setRecipeEditing(messageId, true);
+  }
+
+  onSaveClick(_messageId: number): void {
+    // TODO: Implement save as new recipe functionality
+  }
+
+  onSaveEditClick(event: { messageId: number; patch: RecipePatchRequest }): void {
+    // TODO: Implement save edit functionality
+    this.store.setRecipeEditing(event.messageId, false);
+  }
+
+  onCancelEditClick(messageId: number): void {
+    this.store.setRecipeEditing(messageId, false);
   }
 
   private scrollToBottom(): void {

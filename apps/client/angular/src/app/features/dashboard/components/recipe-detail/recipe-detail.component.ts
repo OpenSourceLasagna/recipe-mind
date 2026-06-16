@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, effect, inject, PLATFORM_ID } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  inject,
+  OnDestroy,
+  PLATFORM_ID,
+} from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
 import { HlmButton } from '@spartan-ng/helm/button';
@@ -16,7 +23,7 @@ import { ChatPanelComponent } from '../../../chat/components/chat-panel/chat-pan
   templateUrl: './recipe-detail.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class RecipeDetailComponent {
+export class RecipeDetailComponent implements OnDestroy {
   readonly #route = inject(ActivatedRoute);
   readonly #router = inject(Router);
   readonly #platformId = inject(PLATFORM_ID);
@@ -27,14 +34,18 @@ export class RecipeDetailComponent {
   readonly skeletonItems = Array(6);
 
   constructor() {
-    // React to route param changes and set the recipe id on the service
     effect(() => {
       if (!isPlatformBrowser(this.#platformId)) return;
       const id = this.#route.snapshot.paramMap.get('id');
       if (id) {
         this.detail.setRecipeId(id);
+        this.chat.setContextRecipe(id);
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.chat.setContextRecipe(null);
   }
 
   goBack(): void {

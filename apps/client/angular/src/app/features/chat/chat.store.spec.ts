@@ -209,4 +209,233 @@ describe('ChatStore', () => {
       expect(store.hasAiResults()).toBe(false);
     });
   });
+
+  describe('recipe context management', () => {
+    it('should start with no context recipe', () => {
+      expect(store.contextRecipeId()).toBeNull();
+      expect(store.contextExcluded()).toBe(false);
+    });
+
+    it('should set context recipe', () => {
+      store.setContextRecipe('recipe-123');
+
+      expect(store.contextRecipeId()).toBe('recipe-123');
+    });
+
+    it('should clear context recipe', () => {
+      store.setContextRecipe('recipe-123');
+      store.setContextRecipe(null);
+
+      expect(store.contextRecipeId()).toBeNull();
+    });
+
+    it('should toggle context excluded', () => {
+      store.setContextRecipe('recipe-123');
+      expect(store.contextExcluded()).toBe(false);
+
+      store.toggleContextExcluded();
+      expect(store.contextExcluded()).toBe(true);
+
+      store.toggleContextExcluded();
+      expect(store.contextExcluded()).toBe(false);
+    });
+
+    it('should reset context excluded when context recipe changes', () => {
+      store.setContextRecipe('recipe-123');
+      store.toggleContextExcluded();
+      expect(store.contextExcluded()).toBe(true);
+
+      store.setContextRecipe('recipe-456');
+      expect(store.contextExcluded()).toBe(false);
+    });
+
+    it('should clear context on reset', () => {
+      store.setContextRecipe('recipe-123');
+      store.toggleContextExcluded();
+
+      store.reset();
+
+      expect(store.contextRecipeId()).toBeNull();
+      expect(store.contextExcluded()).toBe(false);
+    });
+  });
+
+  describe('active recipe tracking', () => {
+    it('should start with no active recipe', () => {
+      expect(store.activeRecipeId()).toBeNull();
+    });
+
+    it('should set active recipe', () => {
+      store.setActiveRecipe('recipe-123');
+
+      expect(store.activeRecipeId()).toBe('recipe-123');
+    });
+
+    it('should clear active recipe', () => {
+      store.setActiveRecipe('recipe-123');
+      store.setActiveRecipe(null);
+
+      expect(store.activeRecipeId()).toBeNull();
+    });
+
+    it('should clear active on reset', () => {
+      store.setActiveRecipe('recipe-123');
+
+      store.reset();
+
+      expect(store.activeRecipeId()).toBeNull();
+    });
+  });
+
+  describe('effective context resolution', () => {
+    it('should return null when no context or active recipe', () => {
+      expect(store.effectiveContextRecipeId()).toBeNull();
+    });
+
+    it('should return context recipe when set and not excluded', () => {
+      store.setContextRecipe('context-recipe');
+      store.setActiveRecipe('active-recipe');
+
+      expect(store.effectiveContextRecipeId()).toBe('context-recipe');
+    });
+
+    it('should return active recipe when context is excluded', () => {
+      store.setContextRecipe('context-recipe');
+      store.toggleContextExcluded();
+      store.setActiveRecipe('active-recipe');
+
+      expect(store.effectiveContextRecipeId()).toBe('active-recipe');
+    });
+
+    it('should return active recipe when no context recipe', () => {
+      store.setActiveRecipe('active-recipe');
+
+      expect(store.effectiveContextRecipeId()).toBe('active-recipe');
+    });
+
+    it('should return null when context excluded and no active', () => {
+      store.setContextRecipe('context-recipe');
+      store.toggleContextExcluded();
+
+      expect(store.effectiveContextRecipeId()).toBeNull();
+    });
+  });
+
+  describe('recipe messages', () => {
+    it('should add recipe message with role recipe', () => {
+      store.addMessage({
+        role: 'recipe',
+        content: '',
+        recipeContext: {
+          originalRecipe: { id: 'recipe-1', title: 'Pasta' } as any,
+          isActive: false,
+          isEditing: false,
+        },
+      });
+
+      const msgs = store.messages();
+      expect(msgs.length).toBe(1);
+      expect(msgs[0].role).toBe('recipe');
+      expect(msgs[0].recipeContext?.originalRecipe.id).toBe('recipe-1');
+    });
+
+    it('should expand recipe into chat as new message', () => {
+      const originalRecipe = { id: 'recipe-1', title: 'Pasta' } as any;
+      const modifiedRecipe = { id: 'recipe-1', title: 'Modified Pasta' } as any;
+
+      store.expandRecipe(originalRecipe, modifiedRecipe, ['title']);
+
+      const msgs = store.messages();
+      expect(msgs.length).toBe(1);
+      expect(msgs[0].role).toBe('recipe');
+      expect(msgs[0].recipeContext?.originalRecipe).toBe(originalRecipe);
+      expect(msgs[0].recipeContext?.modifiedRecipe).toBe(modifiedRecipe);
+      expect(msgs[0].recipeContext?.changedFields).toEqual(['title']);
+    });
+
+    it('should set expanded recipe as active', () => {
+      const originalRecipe = { id: 'recipe-1', title: 'Pasta' } as any;
+
+      store.expandRecipe(originalRecipe);
+
+      expect(store.activeRecipeId()).toBe('recipe-1');
+    });
+
+    it('should collapse recipe message', () => {
+      const originalRecipe = { id: 'recipe-1', title: 'Pasta' } as any;
+      store.expandRecipe(originalRecipe);
+      const messageId = store.messages()[0].id;
+
+      store.collapseRecipe(messageId);
+
+      const msgs = store.messages();
+      expect(msgs[0].recipeContext?.isActive).toBe(false);
+    });
+
+    it('should update active recipe when collapsing current active', () => {
+      const recipe1 = { id: 'recipe-1', title: 'Pasta' } as any;
+      const recipe2 = { id: 'recipe-2', title: 'Pizza' } as any;
+
+      store.expandRecipe(recipe1);
+      store.expandRecipe(recipe2);
+
+      expect(store.activeRecipeId()).toBe('recipe-2');
+
+      const msg2Id = store.messages()[1].id;
+      store.collapseRecipe(msg2Id);
+
+      expect(store.activeRecipeId()).toBe('recipe-1');
+    });
+
+    it('should clear active when collapsing only expanded recipe', () => {
+      const recipe = { id: 'recipe-1', title: 'Pasta' } as any;
+      store.expandRecipe(recipe);
+      const messageId = store.messages()[0].id;
+
+      store.collapseRecipe(messageId);
+
+      expect(store.activeRecipeId()).toBeNull();
+    });
+  });
+
+  describe('unsaved changes detection', () => {
+    it('should return false when no recipe messages', () => {
+      expect(store.hasUnsavedRecipeChanges()).toBe(false);
+    });
+
+    it('should return false when recipe has no modifications', () => {
+      const recipe = { id: 'recipe-1', title: 'Pasta' } as any;
+      store.expandRecipe(recipe);
+
+      expect(store.hasUnsavedRecipeChanges()).toBe(false);
+    });
+
+    it('should return true when recipe has modifications', () => {
+      const original = { id: 'recipe-1', title: 'Pasta' } as any;
+      const modified = { id: 'recipe-1', title: 'Modified' } as any;
+      store.expandRecipe(original, modified, ['title']);
+
+      expect(store.hasUnsavedRecipeChanges()).toBe(true);
+    });
+
+    it('should return true when recipe is being edited', () => {
+      const recipe = { id: 'recipe-1', title: 'Pasta' } as any;
+      store.expandRecipe(recipe);
+      const messageId = store.messages()[0].id;
+
+      store.setRecipeEditing(messageId, true);
+
+      expect(store.hasUnsavedRecipeChanges()).toBe(true);
+    });
+
+    it('should clear unsaved state on reset', () => {
+      const original = { id: 'recipe-1', title: 'Pasta' } as any;
+      const modified = { id: 'recipe-1', title: 'Modified' } as any;
+      store.expandRecipe(original, modified, ['title']);
+
+      store.reset();
+
+      expect(store.hasUnsavedRecipeChanges()).toBe(false);
+    });
+  });
 });

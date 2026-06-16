@@ -1,6 +1,14 @@
-import { Recipe } from '../../dashboard/models/recipe.model';
+import { Recipe, RecipeResponse } from '../../dashboard/models/recipe.model';
 
-export type ChatRole = 'user' | 'assistant';
+export type ChatRole = 'user' | 'assistant' | 'recipe';
+
+export interface RecipeContext {
+  originalRecipe: RecipeResponse;
+  modifiedRecipe?: RecipeResponse;
+  changedFields?: string[];
+  isActive: boolean;
+  isEditing: boolean;
+}
 
 export interface MessageAdditionalContent {
   recipeList?: Recipe[];
@@ -19,6 +27,7 @@ export interface ChatMessage {
   readonly role: ChatRole;
   readonly content: string;
   readonly additionalContent?: MessageAdditionalContent;
+  readonly recipeContext?: RecipeContext;
 }
 
 export interface PendingChatMessage extends Omit<Partial<ChatMessage>, 'additionalContent'> {

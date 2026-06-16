@@ -254,7 +254,19 @@ export class ChatService {
   }
 
   private getTransformedHistory(): ChatRequest['conversationHistory'] {
-    return this.#store.messages().map(({ role, content, additionalContent }) => {
+    return this.#store.messages().map(({ role, content, additionalContent, recipeContext }) => {
+      if (role === 'recipe' && recipeContext) {
+        const recipe = recipeContext.modifiedRecipe ?? recipeContext.originalRecipe;
+        const ingredientsList =
+          recipe.ingredients?.map((i: any) => i.ingredientName).join(', ') || 'None';
+        const contextContent = `- Title: "${recipe.title}" (ID: ${recipe.id}) | Ingredients: [${ingredientsList}]`;
+
+        return {
+          role: 'assistant' as const,
+          content: `[Context - Recipe in Chat:\n${contextContent}]`,
+        };
+      }
+
       if (!additionalContent) {
         return { role, content };
       }

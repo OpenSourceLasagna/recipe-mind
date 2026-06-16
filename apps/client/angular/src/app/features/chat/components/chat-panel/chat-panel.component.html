@@ -10,14 +10,23 @@
       size="icon"
       type="button"
       aria-label="Close chat"
-      (click)="store.close()"
+      (click)="close()"
     >
       <ng-icon hlm name="heroXMark" />
     </button>
   </div>
 
   <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4" #scrollContainer>
-    @if (!store.hasMessages()) {
+    @if (contextRecipeId(); as recipeId) {
+      <app-context-recipe-card
+        [recipeId]="recipeId"
+        [excluded]="contextExcluded()"
+        (expandClick)="expandContextRecipe()"
+        (toggleExcluded)="toggleContextExcluded()"
+      />
+    }
+
+    @if (!store.hasMessages() && !contextRecipeId()) {
       <div
         class="flex h-full flex-col items-center justify-center text-muted-foreground text-sm gap-2"
       >
@@ -27,7 +36,17 @@
     }
 
     @for (msg of messages(); track msg.id) {
-      <app-chat-message [message]="msg" [isPending]="msg.isPending ?? false" />
+      <app-chat-message
+        [message]="msg"
+        [isPending]="msg.isPending ?? false"
+        (expandRecipe)="onRecipeCardExpand($event)"
+        (collapseClick)="onCollapseClick($event)"
+        (closeClick)="onCloseClick($event)"
+        (editClick)="onEditClick($event)"
+        (saveClick)="onSaveClick($event)"
+        (saveEditClick)="onSaveEditClick($event)"
+        (cancelEditClick)="onCancelEditClick($event)"
+      />
     }
 
     @if (loadingStatus(); as status) {
