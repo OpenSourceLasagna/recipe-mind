@@ -46,11 +46,12 @@ describe('EmailFormComponent', () => {
     expect(submitBtn.disabled).toBe(true);
   });
 
-  it('should show auth error when provided', () => {
-    expect(fixture.nativeElement.textContent).not.toContain('Something went wrong');
+  it('should show auth error with role="alert" when provided', () => {
     fixture.componentRef.setInput('authError', 'Something went wrong');
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Something went wrong');
+    const alert = fixture.nativeElement.querySelector('[role="alert"]') as HTMLElement;
+    expect(alert).toBeTruthy();
+    expect(alert.textContent).toContain('Something went wrong');
   });
 
   it('should display email error after touching with invalid email', () => {
@@ -65,6 +66,34 @@ describe('EmailFormComponent', () => {
     // the debounce(1000) means validation waits. We'll verify
     // the error infrastructure works by checking at the signal level.
     expect(component.emailLoginForm.email).toBeDefined();
+  });
+
+  it('should pass forgotPasswordLabel to password-input only in login mode', () => {
+    fixture.componentRef.setInput('showForgotPassword', true);
+    fixture.componentRef.setInput('mode', 'login');
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Forgot?');
+    expect(el.textContent).not.toContain('Confirm Password');
+  });
+
+  it('should not pass forgotPasswordLabel to password-input in registration mode by default', () => {
+    fixture.componentRef.setInput('mode', 'registration');
+    fixture.componentRef.setInput('showForgotPassword', false);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).not.toContain('Forgot?');
+  });
+
+  it('should emit forgotPassword output when the password-input link is clicked', () => {
+    fixture.componentRef.setInput('showForgotPassword', true);
+    fixture.detectChanges();
+    const spy = vi.spyOn(component.forgotPassword, 'emit');
+    const link = fixture.nativeElement.querySelector(
+      'button[hlmBtn][variant="link"]',
+    ) as HTMLButtonElement;
+    link.click();
+    expect(spy).toHaveBeenCalledOnce();
   });
 
   it('submit should emit form value when valid', () => {

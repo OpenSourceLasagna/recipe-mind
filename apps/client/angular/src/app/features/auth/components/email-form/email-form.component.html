@@ -17,18 +17,28 @@
           </hlm-input-group-addon>
         </hlm-input-group>
         @if (emailLoginForm.email().invalid() && emailLoginForm.email().touched()) {
-          <ul>
-            @for (error of emailLoginForm.email().errors(); track error) {
-              <li>{{ error.message }}</li>
+          <ul
+            [id]="emailErrorId"
+            role="alert"
+            class="mt-1.5 flex flex-col gap-1 text-sm text-destructive"
+          >
+            @for (error of emailLoginForm.email().errors(); track error.kind) {
+              <li class="flex items-start gap-1.5">
+                <ng-icon name="error" class="mt-0.5 shrink-0 text-base" />
+                <span>{{ error.message }}</span>
+              </li>
             }
           </ul>
         }
       </hlm-field>
 
-      <!-- Password Field -->
       <app-password-input
-        label="Enter Password"
+        label="Password"
         [formField]="emailLoginForm.password"
+        [forgotPasswordLabel]="showForgotPassword() ? 'Forgot?' : null"
+        [showStrengthMeter]="mode() === 'registration'"
+        [autocomplete]="mode() === 'registration' ? 'new-password' : 'current-password'"
+        (forgotPassword)="forgotPassword.emit()"
       ></app-password-input>
 
       @if (!emailLoginForm.confirmPassword().hidden()) {
@@ -36,13 +46,25 @@
           placeholder="Confirm your password"
           label="Confirm Password"
           [formField]="emailLoginForm.confirmPassword"
+          autocomplete="new-password"
         ></app-password-input>
       }
 
       @if (authError()) {
-        <p class="text-destructive">{{ authError() }}</p>
+        <p
+          role="alert"
+          class="mt-2 flex items-start gap-1.5 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+        >
+          <ng-icon name="error" class="mt-0.5 shrink-0 text-base" />
+          <span>{{ authError() }}</span>
+        </p>
       }
-      <button type="submit" hlmBtn class="w-full mt-3" [disabled]="!emailLoginForm().valid()">
+      <button
+        type="submit"
+        hlmBtn
+        class="w-full mt-4 h-11 text-sm font-semibold"
+        [disabled]="!emailLoginForm().valid()"
+      >
         {{ mode() === 'login' ? 'Sign In' : 'Create Account' }}
       </button>
     </fieldset>

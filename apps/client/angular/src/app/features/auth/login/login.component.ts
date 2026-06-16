@@ -7,8 +7,9 @@ import {
   input,
   Signal,
   signal,
-  WritableSignal,
 } from '@angular/core';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { heroSparkles } from '@ng-icons/heroicons/outline';
 import { EmailFormComponent } from '../components/email-form/email-form.component';
 import { HlmFieldImports } from '@spartan-ng/helm/field';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
@@ -16,7 +17,7 @@ import { HlmCardImports } from '@spartan-ng/helm/card';
 import { LoginMode } from '../models/login-mode';
 import { AuthService } from '../../../core/auth/auth.service';
 import { EmailFormModel } from '../models/email-form-model';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 
 type CardHeaderText = { button: string; title: string; description: string };
 
@@ -24,14 +25,15 @@ type CardHeaderText = { button: string; title: string; description: string };
   selector: 'app-login',
   templateUrl: './login.component.html',
   styleUrl: './login.component.css',
-  imports: [EmailFormComponent, HlmFieldImports, HlmCardImports, HlmButtonImports],
+  imports: [EmailFormComponent, HlmFieldImports, HlmCardImports, HlmButtonImports, NgIcon],
+  providers: [provideIcons({ heroSparkles })],
   host: {
-    class: 'flex flex-col items-center justify-center w-full max-w-md mx-auto p-4',
+    class: 'w-full max-w-md mx-auto p-4',
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginComponent {
-  mode = input<LoginMode>('login');
+  mode = input<LoginMode>(inject(ActivatedRoute).snapshot.data['mode'] || 'login');
   error = signal<string | null>(null);
   #authService = inject(AuthService);
   #router = inject(Router);
@@ -80,5 +82,9 @@ export class LoginComponent {
 
   changeType() {
     this.#router.navigate([this.mode() === 'login' ? 'auth/registration' : 'auth/login']);
+  }
+
+  onForgotPassword() {
+    // TODO: route to password recovery flow when available.
   }
 }
