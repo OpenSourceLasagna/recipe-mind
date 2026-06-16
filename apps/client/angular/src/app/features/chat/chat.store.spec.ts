@@ -166,4 +166,47 @@ describe('ChatStore', () => {
       expect(store.messages()[0].id).toBe(firstId);
     });
   });
+
+  describe('aiResults', () => {
+    it('should start with no ai results', () => {
+      expect(store.aiResults()).toBeNull();
+      expect(store.hasAiResults()).toBe(false);
+    });
+
+    it('should set ai results', () => {
+      const recipes = [
+        { id: '1', title: 'Pasta', difficulty: 'easy' as const, spice_level: 1, durationMinutes: 30, servings: 4 },
+      ];
+      store.setAiResults(recipes);
+
+      expect(store.aiResults()).toEqual(recipes);
+      expect(store.hasAiResults()).toBe(true);
+    });
+
+    it('should clear ai results', () => {
+      store.setAiResults([
+        { id: '1', title: 'Pasta', difficulty: 'easy' as const, spice_level: 1, durationMinutes: 30, servings: 4 },
+      ]);
+      store.clearAiResults();
+
+      expect(store.aiResults()).toBeNull();
+      expect(store.hasAiResults()).toBe(false);
+    });
+
+    it('should treat empty array as no results', () => {
+      store.setAiResults([]);
+
+      expect(store.hasAiResults()).toBe(false);
+    });
+
+    it('should clear ai results on reset', () => {
+      store.setAiResults([
+        { id: '1', title: 'Pasta', difficulty: 'easy' as const, spice_level: 1, durationMinutes: 30, servings: 4 },
+      ]);
+      store.reset();
+
+      expect(store.aiResults()).toBeNull();
+      expect(store.hasAiResults()).toBe(false);
+    });
+  });
 });

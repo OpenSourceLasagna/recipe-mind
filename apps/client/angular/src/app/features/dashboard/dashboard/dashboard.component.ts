@@ -1,4 +1,4 @@
-import { Component, effect, inject, PLATFORM_ID, OnInit } from '@angular/core';
+import { Component, computed, effect, inject, PLATFORM_ID, OnInit } from '@angular/core';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { heroAdjustmentsHorizontal } from '@ng-icons/heroicons/outline';
 import { BreakpointObserver } from '@angular/cdk/layout';
@@ -15,6 +15,7 @@ import { RecipeSearchBarComponent } from '../components/recipe-search-bar/recipe
 import { ChatButtonComponent } from '../../chat/components/chat-button/chat-button.component';
 import { ChatPanelComponent } from '../../chat/components/chat-panel/chat-panel.component';
 import { ChatStore } from '../../chat/chat.store';
+import { AiResultsBannerComponent } from '../components/ai-results-banner/ai-results-banner.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -26,6 +27,7 @@ import { ChatStore } from '../../chat/chat.store';
     RecipeSearchBarComponent,
     ChatButtonComponent,
     ChatPanelComponent,
+    AiResultsBannerComponent,
     HlmCardImports,
     HlmSkeletonImports,
     NgIcon,
@@ -46,6 +48,17 @@ export class DashboardComponent implements OnInit {
   readonly Error = Error;
   readonly recipes = this.#recipeList.recipes;
   readonly skeletonItems = Array(8);
+
+  readonly isDesktopResultsMode = computed(
+    () => this.chat.hasAiResults() && this.filter.isDesktop(),
+  );
+
+  readonly displayRecipes = computed(() => {
+    if (this.isDesktopResultsMode()) {
+      return this.chat.aiResults();
+    }
+    return this.recipes.hasValue() ? this.recipes.value().items : null;
+  });
 
   constructor() {
     const defaults: Record<string, string> = {
@@ -84,5 +97,9 @@ export class DashboardComponent implements OnInit {
 
   openDetails(id: string): void {
     this.#router.navigate(['/dashboard', 'recipes', id]);
+  }
+
+  dismissAiResults(): void {
+    this.chat.clearAiResults();
   }
 }

@@ -55,14 +55,9 @@ export class ChatPanelComponent {
   });
 
   readonly messages = computed(() => {
-    let messages: PanelChatMessage[] = [...(this.#history() ?? [])];
-    let pendingMessage = this.#pendingMessage()?.message;
-    const statusPendingMessage = this.#pendingMessage()?.status;
-    if (
-      pendingMessage != undefined &&
-      (pendingMessage.content?.length ?? 0) > 0 &&
-      statusPendingMessage != null
-    ) {
+    const messages: PanelChatMessage[] = [...(this.#history() ?? [])];
+    const pendingMessage = this.#pendingMessage()?.message;
+    if (pendingMessage != undefined && (pendingMessage.content?.length ?? 0) > 0) {
       messages.push({
         ...pendingMessage,
         role: 'assistant',

@@ -1,5 +1,6 @@
 import { computed, Injectable, signal } from '@angular/core';
 import { ChatMessage } from './models/chat-message.model';
+import { RecipeCardDto } from '../dashboard/models/recipe-card.dto';
 
 @Injectable({ providedIn: 'root' })
 export class ChatStore {
@@ -7,11 +8,14 @@ export class ChatStore {
   readonly #isOpen = signal(false);
   readonly #isLoading = signal(false);
   readonly #nextMessageId = signal(0);
+  readonly #aiResults = signal<RecipeCardDto[] | null>(null);
 
   readonly messages = this.#messages.asReadonly();
   readonly isOpen = this.#isOpen.asReadonly();
   readonly isLoading = this.#isLoading.asReadonly();
   readonly hasMessages = computed(() => this.#messages().length > 0);
+  readonly aiResults = this.#aiResults.asReadonly();
+  readonly hasAiResults = computed(() => (this.#aiResults()?.length ?? 0) > 0);
 
   addMessage(message: Omit<ChatMessage, 'id'>): void {
     this.#messages.update((msgs) => [...msgs, { ...message, id: this.#nextMessageId() }]);
@@ -42,9 +46,18 @@ export class ChatStore {
     this.#isOpen.set(false);
   }
 
+  setAiResults(recipes: RecipeCardDto[]): void {
+    this.#aiResults.set(recipes);
+  }
+
+  clearAiResults(): void {
+    this.#aiResults.set(null);
+  }
+
   reset(): void {
     this.#messages.set([]);
     this.#isLoading.set(false);
     this.#nextMessageId.set(0);
+    this.#aiResults.set(null);
   }
 }

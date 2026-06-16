@@ -1,13 +1,21 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { MarkdownModule } from 'ngx-markdown';
 import { PanelChatMessage } from '../../models/chat-message.model';
 import { RecipeDetailViewComponent } from '../../../dashboard/components/recipe-detail-view/recipe-detail-view.component';
 import { RecipeCardComponent } from '../../../dashboard/components/recipe-card/recipe-card.component';
+import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
+import { ChatStore } from '../../chat.store';
+import { RecipeFilterService } from '../../../dashboard/services/recipe-filter.service';
 
 @Component({
   selector: 'app-chat-message',
   standalone: true,
-  imports: [MarkdownModule, RecipeDetailViewComponent, RecipeCardComponent],
+  imports: [
+    MarkdownModule,
+    RecipeDetailViewComponent,
+    RecipeCardComponent,
+    HlmSkeletonImports,
+  ],
   template: `
     @if (message().role === 'user') {
       <div class="flex justify-end">
@@ -23,12 +31,20 @@ import { RecipeCardComponent } from '../../../dashboard/components/recipe-card/r
           <markdown [data]="message().content" />
           @if (!isPending()) {
             @if (message().additionalContent; as extra) {
-              @if (extra.recipeList ? $any(extra.recipeList) : null; as recipes) {
-                @for (recipe of recipes; track recipe.id) {
-                  <div class="recipe-card">
-                    <h4>{{ recipe.title }}</h4>
-                    <app-recipe-card [recipe]="recipe" />
-                  </div>
+              @if (!isDesktopResultsMode()) {
+                @if (extra.recipeList ? $any(extra.recipeList) : null; as recipes) {
+                  @for (recipe of recipes; track recipe.id) {
+                    <div class="recipe-card">
+                      <h4>{{ recipe.title }}</h4>
+                      <app-recipe-card [recipe]="recipe" />
+                    </div>
+                  }
+                }
+              } @else {
+                @if (extra.recipeList; as recipes) {
+                  <p class="text-sm text-muted-foreground not-prose">
+                    Found {{ recipes.length }} recipe{{ recipes.length === 1 ? '' : 's' }}
+                  </p>
                 }
               }
               @if (extra.recipeDraft ? $any(extra.recipeDraft) : null; as draft) {
@@ -38,12 +54,16 @@ import { RecipeCardComponent } from '../../../dashboard/components/recipe-card/r
           } @else {
             @if (message().additionalContent; as preview) {
               @if (preview.recipeList ? $any(preview.recipeList) : null; as recipes) {
-                @for (recipe of recipes; track recipe?.id) {
-                  {{ recipe?.title }}
-                }
+                <p class="text-sm text-muted-foreground not-prose">
+                  Found {{ recipes.length }} recipe{{ recipes.length === 1 ? '' : 's' }}
+                </p>
               }
-              @if (preview.recipeDraft ? $any(preview.recipeDraft) : null; as draft) {
-                {{ preview.recipeDraft }} {{ $any(preview.recipeDraft)?.title ?? 'no title' }}
+              @if (preview.recipeDraft) {
+                <div class="space-y-2 not-prose">
+                  <div hlmSkeleton class="h-6 w-3/4"></div>
+                  <div hlmSkeleton class="h-4 w-full"></div>
+                  <div hlmSkeleton class="h-4 w-5/6"></div>
+                </div>
               }
             }
           }
@@ -56,4 +76,11 @@ import { RecipeCardComponent } from '../../../dashboard/components/recipe-card/r
 export class ChatMessageComponent {
   readonly message = input.required<PanelChatMessage>();
   readonly isPending = input<boolean>(false);
+
+  private readonly chatStore = inject(ChatStore);
+  private readonly filterService = inject(RecipeFilterService);
+
+  readonly isDesktopResultsMode = computed(
+    () => this.chatStore.hasAiResults() && this.filterService.isDesktop(),
+  );
 }

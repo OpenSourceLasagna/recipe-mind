@@ -15,6 +15,7 @@ from src.services.ai_chef.moderation_service import ModerationService
 from src.services.ai_chef.prompt_guard_service import PromptGuardService
 from src.services.ai_chef.rate_limiter import RateLimiterRegistry
 from src.services.ai_chef.streaming_formatter import format_sse
+from src.services.ai_chef.text_extractor import TextExtractor
 from src.services.ai_chef.tool_definitions import get_responses_tools
 from src.services.ai_chef.tool_executor import ToolExecutor, apply_recipe_patch
 
@@ -193,6 +194,7 @@ class AIChefService:
         for _ in range(max_iterations):
             text_parts: list[str] = []
             tool_calls: list[dict[str, Any]] = []
+            text_extractor = TextExtractor("text")
 
             yield format_sse(
                 "status", {"status": "generating", "detail": "Drafting your answer..."}
@@ -202,8 +204,11 @@ class AIChefService:
                 input_items, instructions, tools
             ):
                 if event_type == "text_delta":
-                    yield format_sse("text_delta", data)
-                    text_parts.append(data["delta"])
+                    raw_delta = data["delta"]
+                    text_parts.append(raw_delta)
+                    clean_delta = text_extractor.feed(raw_delta)
+                    if clean_delta:
+                        yield format_sse("text_delta", {"delta": clean_delta})
                 elif event_type == "tool_call":
                     tool_calls.append(data)
                 elif event_type == "tool_call_name":

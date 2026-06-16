@@ -18,7 +18,7 @@
         </hlm-input-group>
         @if (emailLoginForm.email().invalid() && emailLoginForm.email().touched()) {
           <ul>
-            @for (error of emailLoginForm.email().errors(); track error) {
+            @for (error of emailLoginForm.email().errors(); track error.message) {
               <li>{{ error.message }}</li>
             }
           </ul>

@@ -12,7 +12,7 @@
       />
       @if (store.editorForm.title().invalid() && store.editorForm.title().touched()) {
         <hlm-field-error>
-          @for (error of store.editorForm.title().errors(); track error) {
+          @for (error of store.editorForm.title().errors(); track error.message) {
             {{ error.message }}
           }
         </hlm-field-error>
@@ -32,7 +32,7 @@
         />
         @if (store.editorForm.origin().invalid() && store.editorForm.origin().touched()) {
           <hlm-field-error>
-            @for (error of store.editorForm.origin().errors(); track error) {
+            @for (error of store.editorForm.origin().errors(); track error.message) {
               {{ error.message }}
             }
           </hlm-field-error>
@@ -136,7 +136,7 @@
         store.editorForm.instructionsText().touched()
       ) {
         <hlm-field-error>
-          @for (error of store.editorForm.instructionsText().errors(); track error) {
+          @for (error of store.editorForm.instructionsText().errors(); track error.message) {
             {{ error.message }}
           }
         </hlm-field-error>
@@ -208,7 +208,7 @@
 
   @if (store.editorForm().invalid() && store.editorForm().touched()) {
     <ul>
-      @for (error of store.editorForm().errorSummary(); track error) {
+      @for (error of store.editorForm().errorSummary(); track error.message) {
         <li class="text-destructive text-md font-medium">{{ error.message }}</li>
       }
     </ul>
