@@ -28,7 +28,7 @@ type CardHeaderText = { button: string; title: string; description: string };
   imports: [EmailFormComponent, HlmFieldImports, HlmCardImports, HlmButtonImports, NgIcon],
   providers: [provideIcons({ heroSparkles })],
   host: {
-    class: 'w-full max-w-md mx-auto p-4',
+    class: 'max-w-md w-full p-4 lg:p-0',
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
