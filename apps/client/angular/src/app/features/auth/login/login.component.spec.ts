@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideLocationMocks } from '@angular/common/testing';
-import { provideRouter, Router } from '@angular/router';
+import { provideRouter, Router, ActivatedRoute } from '@angular/router';
 
 import { LoginComponent } from './login.component';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -21,6 +21,7 @@ describe('LoginComponent', () => {
         provideRouter([]),
         provideLocationMocks(),
         { provide: AuthService, useValue: mock },
+        { provide: ActivatedRoute, useValue: { snapshot: { data: { mode: 'login' } } } },
       ],
     }).compileComponents();
 
@@ -111,5 +112,88 @@ describe('LoginComponent', () => {
     // afterRenderEffect or the constructor effect should fire
     TestBed.flushEffects();
     expect(spy).toHaveBeenCalledWith(['/dashboard']);
+  });
+
+  it('should render the CulinarAI brand wordmark inside the card header', () => {
+    fixture.componentRef.setInput('mode', 'login');
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('CulinarAI');
+    const card = el.querySelector('section[hlmcard], section') as HTMLElement;
+    expect(card).toBeTruthy();
+    expect(card.className).toContain('bg-white');
+    expect(card.className).toContain('shadow-lg');
+    expect(card.className).toContain('border-gray-200');
+  });
+
+  it('should not render disabled social sign-in buttons', () => {
+    fixture.componentRef.setInput('mode', 'login');
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).not.toContain('Login with Google');
+    expect(el.textContent).not.toContain('Login with Github');
+  });
+
+  it('should render the inline mode toggle below the form', () => {
+    fixture.componentRef.setInput('mode', 'login');
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain("Don't have an account?");
+    expect(el.textContent).toContain('Create one');
+  });
+
+  it('should render the registration mode toggle copy', () => {
+    fixture.componentRef.setInput('mode', 'registration');
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Already have an account?');
+    expect(el.textContent).toContain('Sign in');
+  });
+
+  it('should forward forgotPassword from the email-form to onForgotPassword', () => {
+    fixture.componentRef.setInput('mode', 'login');
+    fixture.detectChanges();
+    const spy = vi.spyOn(component, 'onForgotPassword');
+    const emailForm = fixture.nativeElement.querySelector('app-email-form') as HTMLElement;
+    expect(emailForm).toBeTruthy();
+    const link = emailForm.querySelector('button[hlmBtn][variant="link"]') as HTMLButtonElement;
+    expect(link).toBeTruthy();
+    link.click();
+    expect(spy).toHaveBeenCalledOnce();
+  });
+
+  describe('Route-based mode initialization', () => {
+    it('should initialize mode from route data', () => {
+      // Default mode should be 'login' from route data
+      expect(component.mode()).toBe('login');
+    });
+
+    it('should show sign-in UI when mode is login', () => {
+      fixture.componentRef.setInput('mode', 'login');
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.textContent).toContain('Sign in');
+      expect(el.textContent).toContain('Create one');
+    });
+
+    it('should show registration UI when mode is registration', () => {
+      fixture.componentRef.setInput('mode', 'registration');
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.textContent).toContain('Create a new account');
+      expect(el.textContent).toContain('Sign in');
+    });
+
+    it('should update UI when mode changes', () => {
+      fixture.componentRef.setInput('mode', 'login');
+      fixture.detectChanges();
+      let el = fixture.nativeElement as HTMLElement;
+      expect(el.textContent).toContain('Sign in');
+
+      fixture.componentRef.setInput('mode', 'registration');
+      fixture.detectChanges();
+      el = fixture.nativeElement as HTMLElement;
+      expect(el.textContent).toContain('Create a new account');
+    });
   });
 });
