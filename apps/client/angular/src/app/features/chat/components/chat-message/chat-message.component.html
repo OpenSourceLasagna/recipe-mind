@@ -1,4 +1,8 @@
-<div [attr.data-message-id]="message().id" [class]="messageClasses()" (animationend)="onHighlightAnimationEnd()">
+<div
+  [attr.data-message-id]="message().id"
+  [class]="messageClasses()"
+  (animationend)="onHighlightAnimationEnd()"
+>
   @if (message().role === 'user') {
     <div class="flex justify-end">
       <div
@@ -8,16 +12,16 @@
       </div>
     </div>
   } @else if (message().role === 'recipe' && message().recipeContext && isMobile()) {
-      <app-recipe-message
-        [recipeContext]="message().recipeContext!"
-        (collapseClick)="collapseClick.emit(message().id)"
-        (closeClick)="closeClick.emit(message().id)"
-        (editClick)="editClick.emit(message().id)"
-        (saveClick)="saveClick.emit(message().id)"
-        (saveEditClick)="saveEditClick.emit({ messageId: message().id, patch: $event })"
-        (cancelEditClick)="cancelEditClick.emit(message().id)"
-        (activateClick)="activateClick.emit(message().id)"
-      />
+    <app-recipe-message
+      [recipeContext]="message().recipeContext!"
+      (collapseClick)="collapseClick.emit(message().id)"
+      (closeClick)="closeClick.emit(message().id)"
+      (editClick)="editClick.emit(message().id)"
+      (saveClick)="saveClick.emit(message().id)"
+      (saveEditClick)="saveEditClick.emit({ messageId: message().id, patch: $event })"
+      (cancelEditClick)="cancelEditClick.emit(message().id)"
+      (activateClick)="activateClick.emit(message().id)"
+    />
   } @else {
     <div class="flex justify-start">
       <div class="max-w-full prose prose-sm dark:prose-invert text-foreground">

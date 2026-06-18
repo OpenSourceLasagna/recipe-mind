@@ -334,7 +334,8 @@ export class ChatService {
         : [],
       nutrition: (r?.['nutrition'] as Record<string, unknown>) ?? {},
       servings: typeof r?.['servings'] === 'number' ? (r!['servings'] as number) : 0,
-      durationMinutes: typeof r?.['durationMinutes'] === 'number' ? (r!['durationMinutes'] as number) : 0,
+      durationMinutes:
+        typeof r?.['durationMinutes'] === 'number' ? (r!['durationMinutes'] as number) : 0,
       difficulty: (r?.['difficulty'] as RecipeResponse['difficulty']) ?? 'easy',
       spiceLevel: typeof r?.['spiceLevel'] === 'number' ? (r!['spiceLevel'] as number) : 0,
       origin: String(r?.['origin'] ?? ''),

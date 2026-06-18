@@ -1,11 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-  output,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { heroArrowRight, heroEye, heroEyeSlash, heroSparkles } from '@ng-icons/heroicons/outline';
 import { HlmButton } from '@spartan-ng/helm/button';
@@ -22,9 +15,7 @@ import { RecipeFilterService } from '../../../dashboard/services/recipe-filter.s
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-2 min-w-0">
           <ng-icon hlm name="heroSparkles" class="size-4 text-primary shrink-0" />
-          <span class="text-sm text-muted-foreground truncate">
-            Currently viewing:
-          </span>
+          <span class="text-sm text-muted-foreground truncate"> Currently viewing: </span>
           <span class="text-sm font-medium truncate">
             {{ recipeTitle() }}
           </span>

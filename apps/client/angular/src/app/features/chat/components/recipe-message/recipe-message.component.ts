@@ -1,11 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  input,
-  output,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   heroChevronDown,
@@ -82,7 +75,11 @@ import { RecipePatchRequest } from '../../../dashboard/models/recipe-edit.model'
             class="size-7"
             (click)="onToggleExpand($event)"
           >
-            <ng-icon hlm [name]="isExpanded() ? 'heroChevronUp' : 'heroChevronDown'" class="size-4" />
+            <ng-icon
+              hlm
+              [name]="isExpanded() ? 'heroChevronUp' : 'heroChevronDown'"
+              class="size-4"
+            />
           </button>
           <button
             hlmBtn
@@ -122,8 +119,8 @@ import { RecipePatchRequest } from '../../../dashboard/models/recipe-edit.model'
           <span class="font-medium text-foreground">
             {{ recipeContext().originalRecipe.difficulty | titlecase }}
           </span>
-          · {{ recipeContext().originalRecipe.durationMinutes }} min
-          · {{ recipeContext().originalRecipe.servings }} servings
+          · {{ recipeContext().originalRecipe.durationMinutes }} min ·
+          {{ recipeContext().originalRecipe.servings }} servings
           @if (recipeContext().originalRecipe.spiceLevel > 0) {
             · 🌶️ {{ recipeContext().originalRecipe.spiceLevel }}
           }
