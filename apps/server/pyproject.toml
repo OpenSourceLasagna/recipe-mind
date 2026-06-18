@@ -27,6 +27,7 @@ dependencies = [
     "scikit-learn>=1.6.0",
     "transformers>=4.40.0",
     "optimum[onnxruntime]>=2.1.0",
+    "einops>=0.8.2",
 ]
 
 [tool.pytest.ini_options]

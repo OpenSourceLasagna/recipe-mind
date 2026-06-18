@@ -4,29 +4,33 @@ import {
   isMainModule,
   writeResponseToNodeResponse,
 } from '@angular/ssr/node';
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { join } from 'node:path';
+
+import { contentSecurityPolicyMiddleware, logStartupWarnings } from './server/csp';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 
-/**
- * Example Express Rest API endpoints can be defined here.
- * Uncomment and define endpoints as necessary.
- *
- * Example:
- * ```ts
- * app.get('/api/{*splat}', (req, res) => {
- *   // Handle API request
- * });
- * ```
- */
+const SECURITY_HEADERS: ReadonlyArray<readonly [string, string]> = [
+  ['X-Content-Type-Options', 'nosniff'],
+  ['X-Frame-Options', 'DENY'],
+  ['Referrer-Policy', 'strict-origin-when-cross-origin'],
+  ['Permissions-Policy', 'geolocation=(), camera=(), microphone=()'],
+  ['Strict-Transport-Security', 'max-age=63072000; includeSubDomains'],
+];
 
-/**
- * Serve static files from /browser
- */
+app.use((_req: Request, res: Response, next: NextFunction) => {
+  for (const [name, value] of SECURITY_HEADERS) {
+    res.setHeader(name, value);
+  }
+  next();
+});
+
+app.use(contentSecurityPolicyMiddleware());
+
 app.use(
   express.static(browserDistFolder, {
     maxAge: '1y',
@@ -35,9 +39,6 @@ app.use(
   }),
 );
 
-/**
- * Handle all other requests by rendering the Angular application.
- */
 app.use((req, res, next) => {
   angularApp
     .handle(req)
@@ -45,11 +46,8 @@ app.use((req, res, next) => {
     .catch(next);
 });
 
-/**
- * Start the server if this module is the main entry point, or it is ran via PM2.
- * The server listens on the port defined by the `PORT` environment variable, or defaults to 4000.
- */
 if (isMainModule(import.meta.url) || process.env['pm_id']) {
+  logStartupWarnings();
   const port = process.env['PORT'] || 4000;
   app.listen(port, (error) => {
     if (error) {
@@ -60,7 +58,4 @@ if (isMainModule(import.meta.url) || process.env['pm_id']) {
   });
 }
 
-/**
- * Request handler used by the Angular CLI (for dev-server and during build) or Firebase Cloud Functions.
- */
 export const reqHandler = createNodeRequestHandler(app);

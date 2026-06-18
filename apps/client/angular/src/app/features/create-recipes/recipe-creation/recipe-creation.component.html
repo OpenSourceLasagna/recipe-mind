@@ -1,3 +1,12 @@
+<!-- Hidden file input for image upload -->
+<input
+  #fileInput
+  type="file"
+  accept="image/jpeg,image/png"
+  class="hidden"
+  (change)="onImageSelected($event)"
+/>
+
 <div class="grid px-4 gap-4 md:grid-cols-4">
   <app-creation-method-box
     [active]="store.activeMethod() == 'link'"
@@ -76,6 +85,20 @@
         <hlm-card-header>
           <h3 hlmCardTitle class="font-semibold">Upload image</h3>
         </hlm-card-header>
+        <div hlmCardContent class="flex flex-col items-center gap-4 py-8">
+          @if (store.isExtracting()) {
+            <p class="text-muted-foreground text-sm">Analyzing image...</p>
+          } @else {
+            <button hlmBtn size="default" variant="outline" (click)="triggerImageUpload()">
+              <ng-icon name="image" class="mr-2" />
+              Choose Image
+            </button>
+            <hlm-field-description>
+              JPEG or PNG up to 10 MB. The AI will extract ingredients and instructions from the
+              photo.
+            </hlm-field-description>
+          }
+        </div>
       }
       @case ('text') {
         <hlm-card-header>
@@ -83,11 +106,17 @@
             <div>
               <h3 hlmCardTitle class="font-semibold">Paste Recipe</h3>
               <hlm-field-description
-                >Paste your raw recipe text below and click 'Paste'. Our AI will parse, clean, and
-                organize it for you.</hlm-field-description
+                >Paste your raw recipe text below and click 'Save Recipe'. Our AI will parse, clean,
+                and organize it for you.</hlm-field-description
               >
             </div>
-            <button hlmBtn size="default" variant="outline" class="sm:ml-auto md:w-xs">
+            <button
+              hlmBtn
+              size="default"
+              variant="outline"
+              class="sm:ml-auto md:w-xs"
+              (click)="pasteFromClipboard()"
+            >
               Paste from Clipboard
             </button>
           </div>
@@ -114,6 +143,12 @@
       }
     }
 
+    @if (store.extractionError()) {
+      <div class="px-6 py-3">
+        <p class="text-destructive text-sm">{{ store.extractionError() }}</p>
+      </div>
+    }
+
     <hlm-card-footer>
       <button
         hlmBtn
@@ -122,8 +157,15 @@
         size="default"
         variant="default"
         class="mx-auto min-w-full md:min-w-sm"
+        [disabled]="isSubmitting() || store.isExtracting()"
       >
-        Save Recipe
+        @if (store.isExtracting()) {
+          Extracting...
+        } @else if (store.activeMethod() === 'text' || store.activeMethod() === 'link') {
+          Extract &amp; Edit
+        } @else {
+          Save Recipe
+        }
       </button>
     </hlm-card-footer>
   </hlm-card>

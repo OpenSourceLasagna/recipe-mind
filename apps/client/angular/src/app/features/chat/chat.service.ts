@@ -165,7 +165,7 @@ export class ChatService {
     try {
       return { type, data: JSON.parse(fullDataStr) };
     } catch (error) {
-      console.warn('Failed to parse SSE JSON chunk:', fullDataStr, error);
+      console.warn('Failed to parse SSE JSON chunk:', error);
       return null;
     }
   }
