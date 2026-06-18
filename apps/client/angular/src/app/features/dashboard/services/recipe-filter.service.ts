@@ -1,6 +1,7 @@
-import { computed, effect, Injectable, signal } from '@angular/core';
+import { computed, effect, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 import { HttpParams } from '@angular/common/http';
 import { Params } from '@angular/router';
+import { isPlatformBrowser } from '@angular/common';
 import { form, max, min } from '@angular/forms/signals';
 import { Difficulty } from '../../create-recipes/models/difficulty.model';
 import {
@@ -15,7 +16,20 @@ import {
 
 @Injectable({ providedIn: 'root' })
 export class RecipeFilterService {
-  readonly isDesktop = signal(true);
+  readonly #platformId = inject(PLATFORM_ID);
+
+  readonly isDesktop = signal(this.#resolveIsDesktop());
+
+  readonly isMobile = computed(() => !this.isDesktop());
+
+  #resolveIsDesktop(): boolean {
+    if (!isPlatformBrowser(this.#platformId)) return true;
+    try {
+      return window.matchMedia?.('(min-width: 1024px)').matches ?? true;
+    } catch {
+      return true;
+    }
+  }
 
   readonly model = signal<FilterModel>({ ...DEFAULT_FILTER_MODEL });
 

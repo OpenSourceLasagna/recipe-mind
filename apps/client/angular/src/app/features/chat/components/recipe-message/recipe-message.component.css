@@ -1,0 +1,26 @@
+:host {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.recipe-detail-wrapper {
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: 70vh;
+  contain: layout style;
+}
+
+.recipe-detail-view-container {
+  display: block;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+@media (max-width: 640px) {
+  .recipe-detail-wrapper {
+    max-height: 60vh;
+    font-size: 0.875rem;
+  }
+}

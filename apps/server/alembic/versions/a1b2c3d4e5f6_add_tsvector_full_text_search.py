@@ -5,6 +5,7 @@ Revises: 6574e342312b
 Create Date: 2026-06-02 12:00:00.000000
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -148,6 +149,8 @@ def downgrade() -> None:
     op.execute("DROP TRIGGER trg_recipes_search_vector ON recipes")
     op.execute("DROP FUNCTION ingredient_search_vector_trigger()")
     op.execute("DROP FUNCTION recipe_search_vector_trigger()")
-    op.execute("DROP FUNCTION generate_recipe_search_vector(TEXT, TEXT, TEXT, TEXT[], TEXT[])")
+    op.execute(
+        "DROP FUNCTION generate_recipe_search_vector(TEXT, TEXT, TEXT, TEXT[], TEXT[])"
+    )
 
     op.drop_column("recipes", "search_vector")

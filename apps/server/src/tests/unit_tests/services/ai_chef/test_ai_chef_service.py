@@ -248,6 +248,67 @@ class TestDirectResponse:
         )
         assert any(e["event"] == "text_delta" for e in events)
 
+    @pytest.mark.asyncio
+    async def test_text_delta_contains_clean_text_not_json(
+        self, service: AIChefService, mock_openai_client: MagicMock
+    ):
+        output_text = json.dumps(
+            {
+                "text": "Here is a nice pasta recipe!",
+                "recipeIds": None,
+                "recipePatch": None,
+            }
+        )
+
+        stream_events = [
+            _make_text_delta_event(output_text),
+            _make_completed_event(),
+        ]
+        mock_openai_client.responses.stream.return_value = _mock_stream_context(
+            stream_events
+        )
+
+        user_id = uuid4()
+        request = AIChefChatRequest(message="suggest a pasta recipe")
+
+        events = await _collect_events(service.stream_chat(request, user_id))
+
+        text_deltas = [e for e in events if e["event"] == "text_delta"]
+        assert len(text_deltas) > 0
+        combined = "".join(d["data"]["delta"] for d in text_deltas)
+        assert combined == "Here is a nice pasta recipe!"
+        assert "{" not in combined
+        assert "recipeIds" not in combined
+
+    @pytest.mark.asyncio
+    async def test_text_delta_incremental_extraction(
+        self, service: AIChefService, mock_openai_client: MagicMock
+    ):
+        json_str = json.dumps(
+            {
+                "text": "Hello world!",
+                "recipeIds": None,
+                "recipePatch": None,
+            }
+        )
+        chunks = [json_str[i : i + 5] for i in range(0, len(json_str), 5)]
+
+        stream_events = [_make_text_delta_event(c) for c in chunks] + [
+            _make_completed_event()
+        ]
+        mock_openai_client.responses.stream.return_value = _mock_stream_context(
+            stream_events
+        )
+
+        user_id = uuid4()
+        request = AIChefChatRequest(message="hello")
+
+        events = await _collect_events(service.stream_chat(request, user_id))
+
+        text_deltas = [e for e in events if e["event"] == "text_delta"]
+        combined = "".join(d["data"]["delta"] for d in text_deltas)
+        assert combined == "Hello world!"
+
 
 class TestToolCallFlow:
     @pytest.mark.asyncio
@@ -641,3 +702,53 @@ class TestParseFinalOutput:
 
         assert result.draft is not None
         assert result.draft.title == "New"
+
+
+class TestRecipeSerialization:
+    def test_recipe_list_dump_uses_camelcase_aliases(self):
+        from datetime import UTC, datetime
+
+        from src.schemas.ingredient import RecipeIngredientResponse
+        from src.schemas.recipe import RecipeResponse
+
+        ingredient = RecipeIngredientResponse(
+            id=uuid4(),
+            ingredient_name="Pasta",
+            quantity=200,
+            unit="g",
+            category_id=None,
+        )
+        recipe = RecipeResponse(
+            id=uuid4(),
+            title="Vegan Pasta",
+            additional_information=["Great for weeknights"],
+            instruction_steps=["Boil water", "Add pasta"],
+            nutrition={"calories": 400},
+            servings=4,
+            duration_minutes=30,
+            difficulty="easy",
+            spice_level=2,
+            origin="Italian",
+            is_public=True,
+            ingredients=[ingredient],
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
+
+        dumped = recipe.model_dump(by_alias=True, mode="json")
+
+        assert dumped["title"] == "Vegan Pasta"
+        assert dumped["additionalInformation"] == ["Great for weeknights"]
+        assert dumped["instructionSteps"] == ["Boil water", "Add pasta"]
+        assert dumped["spiceLevel"] == 2
+        assert dumped["durationMinutes"] == 30
+        assert dumped["isPublic"] is True
+        assert dumped["createdAt"] is not None
+        assert dumped["updatedAt"] is not None
+
+        assert len(dumped["ingredients"]) == 1
+        ingredient_dump = dumped["ingredients"][0]
+        assert ingredient_dump["ingredientName"] == "Pasta"
+        assert ingredient_dump["quantity"] == 200
+        assert ingredient_dump["unit"] == "g"
+        assert ingredient_dump["categoryId"] is None

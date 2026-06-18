@@ -11,6 +11,8 @@ import { ChatStore } from './chat.store';
 import { ChatRequest } from './models/chat-request.model';
 import { ChatMessage, PendingChatMessage } from './models/chat-message.model';
 import { FetchService } from '../../core/services/fetch.service';
+import { RecipeCardDto } from '../dashboard/models/recipe-card.dto';
+import { RecipeResponse } from '../dashboard/models/recipe.model';
 
 type MessageStream = {
   message: PendingChatMessage | null;
@@ -214,6 +216,8 @@ export class ChatService {
 
         case 'recipe_list': {
           const { recipes } = data as { recipes: unknown[] };
+          const normalized = recipes.map((r) => this.#normalizeRecipe(r));
+          this.#store.setAiResults(this.#mapToRecipeCardDtos(normalized));
           return {
             value: {
               ...currentStream,
@@ -221,7 +225,7 @@ export class ChatService {
                 ...currentMsg,
                 additionalContent: {
                   ...currentMsg?.additionalContent,
-                  recipeList: recipes,
+                  recipeList: normalized,
                 },
               },
             },
@@ -252,7 +256,19 @@ export class ChatService {
   }
 
   private getTransformedHistory(): ChatRequest['conversationHistory'] {
-    return this.#store.messages().map(({ role, content, additionalContent }) => {
+    return this.#store.messages().map(({ role, content, additionalContent, recipeContext }) => {
+      if (role === 'recipe' && recipeContext) {
+        const recipe = recipeContext.modifiedRecipe ?? recipeContext.originalRecipe;
+        const ingredientsList =
+          recipe.ingredients?.map((i: any) => i.ingredientName).join(', ') || 'None';
+        const contextContent = `- Title: "${recipe.title}" (ID: ${recipe.id}) | Ingredients: [${ingredientsList}]`;
+
+        return {
+          role: 'assistant' as const,
+          content: `[Context - Recipe in Chat:\n${contextContent}]`,
+        };
+      }
+
       if (!additionalContent) {
         return { role, content };
       }
@@ -303,5 +319,43 @@ export class ChatService {
         content: compiledContent,
       };
     });
+  }
+
+  #normalizeRecipe(raw: unknown): RecipeResponse {
+    const r = raw as Record<string, unknown> | null | undefined;
+    return {
+      id: String(r?.['id'] ?? ''),
+      title: String(r?.['title'] ?? ''),
+      additionalInformation: Array.isArray(r?.['additionalInformation'])
+        ? (r!['additionalInformation'] as string[])
+        : [],
+      instructionSteps: Array.isArray(r?.['instructionSteps'])
+        ? (r!['instructionSteps'] as string[])
+        : [],
+      nutrition: (r?.['nutrition'] as Record<string, unknown>) ?? {},
+      servings: typeof r?.['servings'] === 'number' ? (r!['servings'] as number) : 0,
+      durationMinutes:
+        typeof r?.['durationMinutes'] === 'number' ? (r!['durationMinutes'] as number) : 0,
+      difficulty: (r?.['difficulty'] as RecipeResponse['difficulty']) ?? 'easy',
+      spiceLevel: typeof r?.['spiceLevel'] === 'number' ? (r!['spiceLevel'] as number) : 0,
+      origin: String(r?.['origin'] ?? ''),
+      isPublic: Boolean(r?.['isPublic']),
+      ingredients: Array.isArray(r?.['ingredients'])
+        ? (r!['ingredients'] as RecipeResponse['ingredients'])
+        : [],
+      createdAt: String(r?.['createdAt'] ?? ''),
+      updatedAt: String(r?.['updatedAt'] ?? ''),
+    } satisfies RecipeResponse;
+  }
+
+  #mapToRecipeCardDtos(recipes: unknown[] | RecipeResponse[]): RecipeCardDto[] {
+    return recipes.map((r: any) => ({
+      id: r.id,
+      title: r.title,
+      difficulty: r.difficulty,
+      spice_level: r.spiceLevel,
+      durationMinutes: r.durationMinutes,
+      servings: r.servings,
+    }));
   }
 }

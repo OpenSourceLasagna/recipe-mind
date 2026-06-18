@@ -21,13 +21,17 @@
       </div>
     </div>
 
-    <div class="w-full mb-4">
-      <app-recipe-search-bar />
-    </div>
+    @if (!isDesktopResultsMode()) {
+      <div class="w-full mb-4">
+        <app-recipe-search-bar />
+      </div>
 
-    <app-filter-bar class="hidden md:flex mb-4" />
+      <app-filter-bar class="hidden md:flex mb-4" />
+    } @else {
+      <app-ai-results-banner (dismiss)="dismissAiResults()" />
+    }
 
-    @if (recipes.isLoading()) {
+    @if (recipes.isLoading() && !isDesktopResultsMode()) {
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         @for (_ of skeletonItems; track $index) {
           <hlm-card class="w-full">
@@ -58,13 +62,17 @@
       </p>
     }
 
-    @if (recipes.hasValue()) {
+    @if (displayRecipes(); as items) {
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        @for (recipe of recipes.value().items; track recipe.id) {
+        @for (recipe of items; track recipe.id) {
           <app-recipe-card [recipe]="recipe" (cardClick)="openDetails($event)" />
         } @empty {
           <p class="col-span-full text-center text-muted-foreground py-12">
-            No recipes match your filters
+            @if (isDesktopResultsMode()) {
+              No recipes found
+            } @else {
+              No recipes match your filters
+            }
           </p>
         }
       </div>
