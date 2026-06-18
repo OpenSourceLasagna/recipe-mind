@@ -4,7 +4,8 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException, status
 
 from src.dependencies.auth import CurrentUserID, current_user_id_dep
 from src.dependencies.db import RecipeRepo
-from src.dependencies.services import RecipeIngestor
+from src.dependencies.services import RecipeExtractor, RecipeIngestor
+from src.middleware.rate_limit import _ExtractRateLimit, _StructuredRateLimit
 from src.models.recipe import Recipe
 from src.models.recipe_ingredient import RecipeIngredient
 from src.schemas.recipe import (
@@ -13,6 +14,8 @@ from src.schemas.recipe import (
     RecipeResponse,
     UpdateRecipeRequest,
 )
+from src.schemas.recipe_extraction import ExtractRecipeRequest
+from src.services.recipe_extraction_service import ExtractionError, UrlValidationError
 
 
 router_v1 = APIRouter(
@@ -20,7 +23,12 @@ router_v1 = APIRouter(
 )
 
 
-@router_v1.post("/structured", tags=["recipes"], response_model=RecipeResponse)
+@router_v1.post(
+    "/structured",
+    tags=["recipes"],
+    response_model=RecipeResponse,
+    dependencies=[_StructuredRateLimit],
+)
 async def create_recipe(
     current_user_id: CurrentUserID,
     payload: CreateRecipeRequest,
@@ -32,7 +40,7 @@ async def create_recipe(
         title=payload.title,
         additional_information=payload.additional_information,
         instruction_steps=payload.instruction_steps,
-        nutrition=payload.nutrition,
+        nutrition=payload.nutrition.model_dump(exclude_none=True),
         servings=payload.servings,
         duration_minutes=payload.duration_minutes,
         difficulty=payload.difficulty,
@@ -107,3 +115,25 @@ async def delete_recipe(
         raise HTTPException(status_code=403, detail="Not authorized")
 
     await recipe_repo.delete(recipe)
+
+
+@router_v1.post(
+    "/extract", response_model=CreateRecipeRequest, dependencies=[_ExtractRateLimit]
+)
+async def extract_recipe(
+    current_user_id: CurrentUserID,
+    payload: ExtractRecipeRequest,
+    extractor: RecipeExtractor,
+):
+    try:
+        return await extractor.extract(payload)
+    except UrlValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    except ExtractionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc),
+        ) from exc

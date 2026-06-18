@@ -10,6 +10,8 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+import sqlmodel.sql.sqltypes
+import pgvector.sqlalchemy.vector  # type: ignore
 
 
 # revision identifiers, used by Alembic.

@@ -31,6 +31,7 @@ dependencies = [
     "optimum>=2.1.0,<2.2",
     "optimum-onnx>=0.1.0",
     "onnxruntime>=1.18.0",
+    "einops>=0.8.2",
 ]
 
 [tool.pytest.ini_options]

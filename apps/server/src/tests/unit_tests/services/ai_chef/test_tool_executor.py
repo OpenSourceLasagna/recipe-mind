@@ -373,7 +373,10 @@ class TestApplyRecipePatch:
 
         result, changed = apply_recipe_patch(original, patch)
 
-        assert result.nutrition == {"calories": 300, "protein": 25, "fat": 10}
+        assert result.nutrition.calories == 300
+        assert result.nutrition.protein == 25
+        assert result.nutrition.fat == 10
+        assert result.nutrition.carbs is None
         assert changed == ["nutrition"]
 
     def test_replaces_ingredients_list(self):

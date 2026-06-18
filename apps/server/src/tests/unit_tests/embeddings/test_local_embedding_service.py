@@ -86,4 +86,8 @@ class TestLocalEmbeddingService:
             base_path="./models",
             model_name="nomic-ai/nomic-embed-text-v1.5",
         )
-        mock_st_cls.assert_called_once_with(str(expected_path), device="cpu")
+        mock_st_cls.assert_called_once_with(
+            str(expected_path),
+            device="cpu",
+            trust_remote_code=True,
+        )

@@ -88,9 +88,8 @@ export class NavBarComponent {
     try {
       await this.#authService.signOut();
       await this.#router.navigate([ROUTES.LOGIN]);
-    } catch (e) {
-      alert(JSON.stringify(e));
-      // TODO: surface error to user via toast notification
+    } catch {
+      // Auth sign-out failed; do not navigate to avoid masking the error.
     }
   }
 }

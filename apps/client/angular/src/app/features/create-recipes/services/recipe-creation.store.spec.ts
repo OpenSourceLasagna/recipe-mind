@@ -226,16 +226,30 @@ describe('RecipeCreationStore', () => {
       req.flush({ id: 'new-id' });
     });
 
-    it('should call addUrlRecipe for link mode', () => {
+    it('should call extract for link mode', () => {
       store.setActiveMethod('link');
       store.urlInput.set('https://example.com/recipe');
 
       store.submitCurrentMode().subscribe();
 
-      const req = httpMock.expectOne((r) => r.url.includes('/url'));
+      const req = httpMock.expectOne((r) => r.url.includes('/extract'));
       expect(req.request.method).toBe('POST');
-      expect(req.request.body.url).toContain('example.com');
-      req.flush({});
+      expect(req.request.body.source).toBe('url');
+      expect(req.request.body.content).toBe('https://example.com/recipe');
+      const extracted = {
+        title: 'Extracted Recipe',
+        ingredients: [{ ingredientName: 'tomato', quantity: 2, unit: 'cups' }],
+        additionalInformation: [],
+        instructionSteps: ['Step 1'],
+        nutrition: {},
+        servings: 4,
+        durationMinutes: 30,
+        difficulty: 'easy',
+        spiceLevel: 1,
+        origin: 'Unknown',
+        isPublic: false,
+      };
+      req.flush(extracted);
     });
 
     it('should call addTextRecipe for text mode', () => {
@@ -244,10 +258,203 @@ describe('RecipeCreationStore', () => {
 
       store.submitCurrentMode().subscribe();
 
-      const req = httpMock.expectOne((r) => r.url.includes('/text'));
+      const req = httpMock.expectOne((r) => r.url.includes('/extract'));
       expect(req.request.method).toBe('POST');
-      expect(req.request.body.text).toBe('Some recipe text');
-      req.flush({});
+      expect(req.request.body.source).toBe('text');
+      expect(req.request.body.content).toBe('Some recipe text');
+      const extracted = {
+        title: 'Extracted Recipe',
+        ingredients: [{ ingredientName: 'tomato', quantity: 2, unit: 'cups' }],
+        additionalInformation: [],
+        instructionSteps: ['Step 1'],
+        nutrition: {},
+        servings: 4,
+        durationMinutes: 30,
+        difficulty: 'easy',
+        spiceLevel: 1,
+        origin: 'Italian',
+        isPublic: false,
+      };
+      req.flush(extracted);
+    });
+
+    it('should throw for image mode', () => {
+      store.setActiveMethod('image');
+      expect(() => store.submitCurrentMode()).toThrow();
+    });
+  });
+
+  describe('extract', () => {
+    it('should call extract endpoint and populate editor on text success', () => {
+      const extracted = {
+        title: 'Pasta Carbonara',
+        ingredients: [
+          { ingredientName: 'spaghetti', quantity: 400, unit: 'g' },
+          { ingredientName: 'eggs', quantity: 3, unit: '' },
+          { ingredientName: 'pecorino', quantity: 100, unit: 'g' },
+        ],
+        additionalInformation: ['Use room temperature eggs'],
+        instructionSteps: ['Boil pasta', 'Mix eggs and cheese', 'Combine and toss'],
+        nutrition: { calories: 450, protein: 20, carbs: 55, fat: 18 },
+        servings: 4,
+        durationMinutes: 25,
+        difficulty: 'medium',
+        spiceLevel: 2,
+        origin: 'Italian',
+        isPublic: true,
+      };
+
+      store.setActiveMethod('text');
+      store.rawTextInput.set('Pasta Carbonara recipe...');
+
+      store.extract('text', store.rawTextInput()).subscribe();
+
+      const req = httpMock.expectOne((r) => r.url.includes('/extract'));
+      expect(req.request.body.source).toBe('text');
+      req.flush(extracted);
+
+      expect(store.activeMethod()).toBe('editor');
+      expect(store.isExtracting()).toBe(false);
+      expect(store.extractionError()).toBeNull();
+      expect(store.editorModel().title).toBe('Pasta Carbonara');
+      expect(store.editorModel().servings).toBe(4);
+      expect(store.editorModel().difficulty).toBe('medium');
+      expect(store.editorModel().origin).toBe('Italian');
+      expect(store.editorModel().instructionsText).toBe(
+        'Boil pasta\nMix eggs and cheese\nCombine and toss',
+      );
+      expect(store.editorModel().calories).toBe('450');
+      expect(store.editorIngredients().length).toBe(3);
+      expect(store.editorIngredients()[0].ingredientName).toBe('spaghetti');
+      expect(store.editorIngredientsTouched()).toBe(true);
+    });
+
+    it('should call extract endpoint with image source', () => {
+      const extracted = {
+        title: 'Image Recipe',
+        ingredients: [{ ingredientName: 'rice', quantity: 1, unit: 'cup' }],
+        additionalInformation: [],
+        instructionSteps: ['Cook rice'],
+        nutrition: {},
+        servings: 2,
+        durationMinutes: 20,
+        difficulty: 'easy',
+        spiceLevel: 2,
+        origin: 'Unknown',
+        isPublic: false,
+      };
+
+      store.setActiveMethod('image');
+      store.extract('image', 'base64imagedata').subscribe();
+
+      const req = httpMock.expectOne((r) => r.url.includes('/extract'));
+      expect(req.request.body.source).toBe('image');
+      expect(req.request.body.content).toBe('base64imagedata');
+      req.flush(extracted);
+
+      expect(store.activeMethod()).toBe('editor');
+    });
+
+    it('should set extraction error on failure', () => {
+      store.setActiveMethod('text');
+      store.rawTextInput.set('bad text');
+
+      store.extract('text', store.rawTextInput()).subscribe({
+        error: () => {},
+      });
+
+      const req = httpMock.expectOne((r) => r.url.includes('/extract'));
+      req.flush({ detail: 'Failed to parse' }, { status: 502, statusText: 'Bad Gateway' });
+
+      expect(store.isExtracting()).toBe(false);
+      expect(store.extractionError()).toBe('Failed to parse');
+      expect(store.activeMethod()).toBe('text');
+    });
+  });
+
+  describe('populateFromExtraction', () => {
+    it('should populate all fields from a full extraction result', () => {
+      store.populateFromExtraction({
+        title: 'Full Recipe',
+        ingredients: [
+          { ingredientName: 'flour', quantity: 2, unit: 'cups' },
+          { ingredientName: 'milk', quantity: 1, unit: 'cup' },
+        ],
+        additionalInformation: ['Serve warm', 'Freezes well'],
+        instructionSteps: ['Mix dry ingredients', 'Add wet ingredients', 'Bake at 350F'],
+        nutrition: { calories: 300, protein: 8, carbs: 45, fat: 12 },
+        servings: 6,
+        durationMinutes: 45,
+        difficulty: 'medium',
+        spiceLevel: 2,
+        origin: 'French',
+        isPublic: true,
+      });
+
+      expect(store.editorModel().title).toBe('Full Recipe');
+      expect(store.editorModel().origin).toBe('French');
+      expect(store.editorModel().servings).toBe(6);
+      expect(store.editorModel().durationMinutes).toBe(45);
+      expect(store.editorModel().difficulty).toBe('medium');
+      expect(store.editorModel().spiceLevel).toBe(2);
+      expect(store.editorModel().isPublic).toBe(true);
+      expect(store.editorModel().instructionsText).toBe(
+        'Mix dry ingredients\nAdd wet ingredients\nBake at 350F',
+      );
+      expect(store.editorModel().additionalInformationText).toBe('Serve warm\nFreezes well');
+      expect(store.editorModel().calories).toBe('300');
+      expect(store.editorModel().protein).toBe('8');
+      expect(store.editorModel().carbs).toBe('45');
+      expect(store.editorModel().fat).toBe('12');
+      expect(store.editorIngredients().length).toBe(2);
+      expect(store.editorIngredients()[0].ingredientName).toBe('flour');
+      expect(store.editorIngredients()[0].quantity).toBe(2);
+      expect(store.editorIngredients()[0].unit).toBe('cups');
+      expect(store.editorIngredientsTouched()).toBe(true);
+    });
+
+    it('should use defaults for missing fields', () => {
+      store.populateFromExtraction({
+        title: 'Minimal',
+        ingredients: [],
+        additionalInformation: [],
+        instructionSteps: [],
+        nutrition: {},
+        servings: 0,
+        durationMinutes: 0,
+        difficulty: 'easy',
+        spiceLevel: 1,
+        origin: '',
+        isPublic: false,
+      });
+
+      expect(store.editorModel().title).toBe('Minimal');
+      expect(store.editorModel().origin).toBe('Unknown');
+      expect(store.editorModel().calories).toBe('');
+      expect(store.editorModel().protein).toBe('');
+      expect(store.editorIngredients().length).toBe(1);
+      expect(store.editorIngredients()[0].ingredientName).toBe('');
+    });
+
+    it('should handle partial nutrition data', () => {
+      store.populateFromExtraction({
+        title: 'Partial Nutrition',
+        ingredients: [{ ingredientName: 'salt', quantity: 1, unit: 'tsp' }],
+        additionalInformation: [],
+        instructionSteps: [],
+        nutrition: { calories: 100 },
+        servings: 2,
+        durationMinutes: 10,
+        difficulty: 'easy',
+        spiceLevel: 1,
+        origin: 'Unknown',
+        isPublic: false,
+      });
+
+      expect(store.editorModel().calories).toBe('100');
+      expect(store.editorModel().protein).toBe('');
+      expect(store.editorModel().carbs).toBe('');
+      expect(store.editorModel().fat).toBe('');
     });
   });
 });

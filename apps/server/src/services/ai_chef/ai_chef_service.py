@@ -149,6 +149,12 @@ class AIChefService:
         guard_safe, mod_safe = await self._run_moderation(history, user_text)
 
         if not guard_safe:
+            from src.observability import audit
+            from src.observability.request_context import get_current_request
+
+            audit.guard_blocked(
+                get_current_request(), "user_message", "prompt_injection"
+            )
             yield format_sse(
                 "error",
                 {
@@ -158,6 +164,12 @@ class AIChefService:
             )
             return
         if not mod_safe:
+            from src.observability import audit
+            from src.observability.request_context import get_current_request
+
+            audit.guard_blocked(
+                get_current_request(), "user_message", "content_violation"
+            )
             yield format_sse(
                 "error",
                 {
@@ -248,6 +260,27 @@ class AIChefService:
                     tc["arguments"],
                     user_id,
                 )
+
+                guard_safe, mod_safe = await self._moderate_content(result_json)
+                if not guard_safe:
+                    yield format_sse(
+                        "error",
+                        {
+                            "error": "Tool output blocked for security reasons.",
+                            "code": "TOOL_OUTPUT_INJECTION",
+                        },
+                    )
+                    return
+                if not mod_safe:
+                    yield format_sse(
+                        "error",
+                        {
+                            "error": "Tool output violates content policies.",
+                            "code": "TOOL_OUTPUT_VIOLATION",
+                        },
+                    )
+                    return
+
                 input_items.append(
                     {
                         "type": "function_call_output",
@@ -301,7 +334,6 @@ class AIChefService:
                     "strict": True,
                 },
             },
-            temperature=self._settings.ai_chef_temperature,
         )
 
         async with stream_manager as stream:
@@ -443,14 +475,21 @@ class AIChefService:
         history: list[AIChefMessage],
         message: str,
     ) -> tuple[bool, bool]:
-        import asyncio
-
         parts: list[str] = []
         for m in history:
             parts.append(f"{m.role}: {m.content}")
         parts.append(f"user: {message}")
-        user_text = "\n".join(parts)
+        return await self._moderate_content("\n".join(parts))
 
-        guard_task = self._guard.is_safe(user_text)
-        mod_task = self._moderation.is_safe(user_text)
+    async def _moderate_content(self, content: str) -> tuple[bool, bool]:
+        from .guard_backstop import has_injection_pattern
+
+        if has_injection_pattern(content):
+            logger.warning("guard_backstop triggered; pattern match found in content")
+            return False, False
+
+        import asyncio
+
+        guard_task = self._guard.is_safe(content)
+        mod_task = self._moderation.is_safe(content)
         return await asyncio.gather(guard_task, mod_task)

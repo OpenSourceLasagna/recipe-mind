@@ -1,9 +1,8 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
-from supabase import Client
 
 
 @pytest.fixture(autouse=True)
@@ -36,6 +35,15 @@ def _set_test_env_vars(monkeypatch):
     monkeypatch.setenv("CORS_ORIGINS", '["http://localhost:4200"]')
 
 
+@pytest.fixture(autouse=True)
+def _reset_rate_limiters():
+    from src.middleware.rate_limit import reset_all_rate_limiters
+
+    reset_all_rate_limiters()
+    yield
+    reset_all_rate_limiters()
+
+
 @pytest.fixture
 def app(_patch_lifespan_dependencies, _set_test_env_vars) -> FastAPI:
     from src.main import app
@@ -50,24 +58,56 @@ def client(app: FastAPI) -> TestClient:
 
 
 @pytest.fixture
-def mock_supabase_client() -> MagicMock:
-    client = MagicMock(spec=Client)
-    client.postgrest.from_table.return_value.select.return_value.limit.return_value.execute.return_value = MagicMock()
-    return client
+def db_healthy(monkeypatch):
+    async def _check():
+        return "healthy"
+
+    monkeypatch.setattr("src.main._check_database", _check)
 
 
-@pytest.fixture(autouse=True)
-def _override_deps(app: FastAPI, mock_supabase_client: MagicMock):
-    """Inject mocked Supabase/OpenAI clients into every test."""
-    from src.dependencies.clients import get_supabase_client, get_openai_client
+@pytest.fixture
+def db_unhealthy(monkeypatch):
+    async def _check():
+        return "unhealthy"
 
-    mock_openai = MagicMock()
-    mock_openai.models.list = AsyncMock(return_value={})
+    monkeypatch.setattr("src.main._check_database", _check)
 
-    app.dependency_overrides[get_supabase_client] = lambda: mock_supabase_client
-    app.dependency_overrides[get_openai_client] = lambda: mock_openai
-    yield
-    app.dependency_overrides.clear()
+
+@pytest.fixture
+def openai_initialized(monkeypatch):
+    from src.dependencies import clients as clients_module
+
+    monkeypatch.setattr(clients_module, "openai_client", MagicMock(), raising=False)
+
+
+@pytest.fixture
+def openai_uninitialized(monkeypatch):
+    from src.dependencies import clients as clients_module
+
+    monkeypatch.delattr(clients_module, "openai_client", raising=False)
+
+
+@pytest.fixture
+def supabase_initialized(monkeypatch):
+    from src.dependencies import clients as clients_module
+
+    monkeypatch.setattr(clients_module, "supabase_client", MagicMock(), raising=False)
+
+
+@pytest.fixture
+def supabase_uninitialized(monkeypatch):
+    from src.dependencies import clients as clients_module
+
+    monkeypatch.delattr(clients_module, "supabase_client", raising=False)
+
+
+@pytest.fixture
+def all_healthy(
+    db_healthy,
+    openai_initialized,
+    supabase_initialized,
+):
+    pass
 
 
 class TestAppMetadata:
@@ -82,6 +122,8 @@ class TestAppMetadata:
 
     def test_routers_registered(self, app: FastAPI):
         route_paths = [r.path for r in app.routes if hasattr(r, "path")]
+        assert "/health/live" in route_paths
+        assert "/health/ready" in route_paths
         assert "/health" in route_paths
         assert "/" in route_paths
 
@@ -90,6 +132,45 @@ class TestAppMetadata:
         from fastapi.middleware.cors import CORSMiddleware
 
         assert CORSMiddleware in middlewares
+
+    def test_cors_methods_not_wildcard(self, app: FastAPI):
+        from fastapi.middleware.cors import CORSMiddleware
+
+        cors_mw = next(m for m in app.user_middleware if m.cls is CORSMiddleware)
+        allowed = cors_mw.kwargs.get("allow_methods", [])
+        assert "*" not in allowed
+        assert "GET" in allowed
+        assert "POST" in allowed
+        assert "PATCH" in allowed
+        assert "DELETE" in allowed
+        assert "OPTIONS" in allowed
+
+    def test_cors_headers_not_wildcard(self, app: FastAPI):
+        from fastapi.middleware.cors import CORSMiddleware
+
+        cors_mw = next(m for m in app.user_middleware if m.cls is CORSMiddleware)
+        allowed = cors_mw.kwargs.get("allow_headers", [])
+        assert "*" not in allowed
+        assert "Authorization" in allowed
+        assert "Content-Type" in allowed
+
+
+class TestCorsStartupGuard:
+    def test_wildcard_origin_with_credentials_raises(self):
+        from src.main import _validate_cors_origins
+
+        with pytest.raises(ValueError, match="not allowed with allow_credentials"):
+            _validate_cors_origins({"*"})
+
+    def test_explicit_origin_passes(self):
+        from src.main import _validate_cors_origins
+
+        _validate_cors_origins({"http://localhost:4200"})
+
+    def test_empty_origins_passes(self):
+        from src.main import _validate_cors_origins
+
+        _validate_cors_origins(set())
 
 
 class TestRootEndpoint:
@@ -101,71 +182,139 @@ class TestRootEndpoint:
         assert data["name"] == "Recipe Mind API"
         assert data["version"] == "0.1.0"
         assert data["docs"] == "/docs"
-        assert data["health"] == "/health"
+        assert data["health"]["live"] == "/health/live"
+        assert data["health"]["ready"] == "/health/ready"
 
 
-class TestHealthCheck:
-    def test_health_healthy(self, client: TestClient, mock_supabase_client: MagicMock):
-        response = client.get("/health")
+class TestLiveness:
+    def test_live_returns_200(self, client: TestClient):
+        response = client.get("/health/live")
+
+        assert response.status_code == 200
+        assert response.json() == {"status": "alive"}
+
+    def test_live_does_not_query_database(self, client: TestClient, monkeypatch):
+        called = {"db": False}
+
+        async def _check():
+            called["db"] = True
+            return "healthy"
+
+        monkeypatch.setattr("src.main._check_database", _check)
+
+        client.get("/health/live")
+
+        assert called["db"] is False
+
+
+class TestReadinessAllHealthy:
+    def test_ready_returns_200(self, client: TestClient, all_healthy):
+        response = client.get("/health/ready")
 
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "healthy"
-        assert data["base_provider"] is True
-        assert data["ai"] is True
+        assert data == {
+            "status": "ready",
+            "database": "healthy",
+            "ai": "healthy",
+            "supabase": "healthy",
+        }
 
-    def test_health_supabase_unhealthy(
-        self, client: TestClient, mock_supabase_client: MagicMock
+
+class TestReadinessDatabaseDown:
+    def test_db_unhealthy_returns_503(
+        self,
+        client: TestClient,
+        db_unhealthy,
+        openai_initialized,
+        supabase_initialized,
     ):
-        mock_supabase_client.postgrest.from_table.return_value.select.return_value.limit.return_value.execute.side_effect = Exception(
-            "DB down"
-        )
+        response = client.get("/health/ready")
 
+        assert response.status_code == 503
+        data = response.json()
+        assert data["status"] == "not_ready"
+        assert data["database"] == "unhealthy"
+        assert data["ai"] == "healthy"
+        assert data["supabase"] == "healthy"
+
+
+class TestReadinessOpenAIDown:
+    def test_openai_uninitialized_returns_503(
+        self,
+        client: TestClient,
+        db_healthy,
+        openai_uninitialized,
+        supabase_initialized,
+    ):
+        response = client.get("/health/ready")
+
+        assert response.status_code == 503
+        data = response.json()
+        assert data["status"] == "not_ready"
+        assert data["ai"] == "unhealthy"
+        assert data["database"] == "healthy"
+        assert data["supabase"] == "healthy"
+
+    def test_openai_set_to_none_returns_503(
+        self,
+        client: TestClient,
+        db_healthy,
+        supabase_initialized,
+        monkeypatch,
+    ):
+        from src.dependencies import clients as clients_module
+
+        monkeypatch.setattr(clients_module, "openai_client", None, raising=False)
+
+        response = client.get("/health/ready")
+
+        assert response.status_code == 503
+        assert response.json()["ai"] == "unhealthy"
+
+
+class TestReadinessSupabaseDown:
+    def test_supabase_uninitialized_returns_503(
+        self,
+        client: TestClient,
+        db_healthy,
+        openai_initialized,
+        supabase_uninitialized,
+    ):
+        response = client.get("/health/ready")
+
+        assert response.status_code == 503
+        data = response.json()
+        assert data["status"] == "not_ready"
+        assert data["supabase"] == "unhealthy"
+        assert data["database"] == "healthy"
+        assert data["ai"] == "healthy"
+
+
+class TestHealthBackwardCompat:
+    def test_legacy_health_path_aliases_ready(
+        self,
+        client: TestClient,
+        all_healthy,
+    ):
         response = client.get("/health")
 
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "degraded"
-        assert data["base_provider"] is False
-        assert data["ai"] is True
+        assert data["status"] == "ready"
 
-    def test_health_openai_unhealthy(self, app: FastAPI, client: TestClient):
-        from src.dependencies.clients import get_openai_client
-
-        mock_openai_down = MagicMock()
-        mock_openai_down.models.list.side_effect = Exception("AI down")
-        app.dependency_overrides[get_openai_client] = lambda: mock_openai_down
-
+    def test_legacy_health_returns_503_when_not_ready(
+        self,
+        client: TestClient,
+        db_unhealthy,
+        openai_initialized,
+        supabase_initialized,
+    ):
         response = client.get("/health")
 
-        assert response.status_code == 200
+        assert response.status_code == 503
         data = response.json()
-        assert data["status"] == "degraded"
-        assert data["base_provider"] is True
-        assert data["ai"] is False
-
-    def test_health_supabase_disconnected(self, app: FastAPI, client: TestClient):
-        from src.dependencies.clients import get_supabase_client
-
-        app.dependency_overrides[get_supabase_client] = lambda: None
-
-        response = client.get("/health")
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["base_provider"] is False
-
-    def test_health_openai_disconnected(self, app: FastAPI, client: TestClient):
-        from src.dependencies.clients import get_openai_client
-
-        app.dependency_overrides[get_openai_client] = lambda: None
-
-        response = client.get("/health")
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["base_provider"] is True
-        assert data["ai"] is False
+        assert data["status"] == "not_ready"
 
 
 class TestExceptionHandlers:
@@ -197,11 +346,3 @@ class TestExceptionHandlers:
 
         body = json.loads(response.body)
         assert body["detail"] == "Internal server error"
-
-    def test_health_returns_snake_case_response(self, client: TestClient):
-        response = client.get("/health")
-
-        assert response.status_code == 200
-        data = response.json()
-        assert "base_provider" in data
-        assert "status" in data

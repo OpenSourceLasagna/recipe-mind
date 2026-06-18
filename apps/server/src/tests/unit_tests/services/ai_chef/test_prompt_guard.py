@@ -36,9 +36,26 @@ async def test_is_safe_list_result(guard: PromptGuardService):
 
 
 @pytest.mark.asyncio
-async def test_is_safe_model_failure_fails_open(guard: PromptGuardService):
+async def test_is_safe_model_failure_fails_closed_by_default(
+    guard: PromptGuardService,
+):
     with patch.object(
         guard, "_run_inference", side_effect=RuntimeError("model crashed")
     ):
         result = await guard.is_safe("hello")
+        assert result is False
+
+
+@pytest.mark.asyncio
+async def test_is_safe_model_failure_fails_open_when_opted_in():
+    service = PromptGuardService(
+        model_name="meta-llama/Llama-Prompt-Guard-2-86M",
+        base_path="/tmp/models",
+        threshold=0.9,
+        fail_open=True,
+    )
+    with patch.object(
+        service, "_run_inference", side_effect=RuntimeError("model crashed")
+    ):
+        result = await service.is_safe("hello")
         assert result is True

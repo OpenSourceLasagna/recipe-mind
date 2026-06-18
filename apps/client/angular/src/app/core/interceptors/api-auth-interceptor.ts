@@ -3,15 +3,16 @@ import { AuthService } from '../auth/auth.service';
 import { inject } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { throwError } from 'rxjs';
+import { getApiOrigin, isSameOriginAsApi } from '../utils/url-match';
+
+const apiOrigin = getApiOrigin(environment.apiUrl);
 
 export const apiAuthInterceptor: HttpInterceptorFn = (req, next) => {
-  const authService = inject(AuthService);
-  const isTargetingApiUrl = req.url.startsWith(environment.apiUrl);
-
-  if (!isTargetingApiUrl) {
+  if (!isSameOriginAsApi(req.url, apiOrigin)) {
     return next(req);
   }
 
+  const authService = inject(AuthService);
   const token = authService.accessToken();
   if (token) {
     const clonedReq = req.clone({
@@ -38,9 +39,9 @@ export const createFetchAuthInterceptor = () => {
 
   return (...args: Parameters<typeof fetch>): Parameters<typeof fetch> => {
     let [input, init = {}] = args;
-    const isTargetingApiUrl = input.toString().startsWith(environment.apiUrl);
+    const inputUrl = input.toString();
 
-    if (!isTargetingApiUrl) {
+    if (!isSameOriginAsApi(inputUrl, apiOrigin)) {
       return args;
     }
 

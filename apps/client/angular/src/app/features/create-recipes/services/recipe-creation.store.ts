@@ -1,6 +1,6 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { form } from '@angular/forms/signals';
-import { Observable } from 'rxjs';
+import { catchError, map, Observable, of, switchMap, tap, throwError } from 'rxjs';
 import { CreateRecipeRequest } from '../models/create-recipe.model';
 import { RecipeResponse } from '../../dashboard/models/recipe.model';
 import { RecipeService } from './recipe.service';
@@ -28,6 +28,10 @@ export class RecipeCreationStore {
 
   // ── Free-text mode state ──
   readonly rawTextInput = signal('');
+
+  // ── Extraction state ──
+  readonly isExtracting = signal(false);
+  readonly extractionError = signal<string | null>(null);
 
   // ── Editor (structured) mode state ──
   readonly editorModel = createRecipeCreationModel();
@@ -59,12 +63,15 @@ export class RecipeCreationStore {
 
   setActiveMethod(method: CreationMethod): void {
     this.activeMethod.set(method);
+    this.extractionError.set(null);
   }
 
   reset(): void {
     this.activeMethod.set('link');
     this.urlInput.set('');
     this.rawTextInput.set('');
+    this.isExtracting.set(false);
+    this.extractionError.set(null);
     this.editorModel.set({
       title: '',
       origin: 'Unknown',
@@ -152,15 +159,66 @@ export class RecipeCreationStore {
     };
   }
 
+  /** Call the extraction API and populate the editor form on success. */
+  extract(source: 'text' | 'image' | 'url', content: string): Observable<CreateRecipeRequest> {
+    this.isExtracting.set(true);
+    this.extractionError.set(null);
+
+    return this.#recipeService.extractRecipe(source, content).pipe(
+      tap((result) => {
+        this.populateFromExtraction(result);
+        this.isExtracting.set(false);
+        this.activeMethod.set('editor');
+      }),
+      catchError((err) => {
+        this.isExtracting.set(false);
+        const message = err?.error?.detail ?? err?.message ?? 'Extraction failed';
+        this.extractionError.set(message);
+        return throwError(() => err);
+      }),
+    );
+  }
+
+  /** Populate the editor form and ingredients from an extracted CreateRecipeRequest. */
+  populateFromExtraction(data: CreateRecipeRequest): void {
+    const nutrition = data.nutrition ?? {};
+    this.editorModel.set({
+      title: data.title ?? '',
+      origin: data.origin?.trim() || 'Unknown',
+      servings: data.servings || 4,
+      durationMinutes: data.durationMinutes || 0,
+      difficulty: (data.difficulty as 'easy' | 'medium' | 'hard') ?? 'medium',
+      spiceLevel: data.spiceLevel ?? 2,
+      isPublic: data.isPublic ?? false,
+      instructionsText: (data.instructionSteps ?? []).join('\n'),
+      additionalInformationText: (data.additionalInformation ?? []).join('\n'),
+      dietTagsText: '',
+      calories: nutrition['calories'] != null ? String(nutrition['calories']) : '',
+      protein: nutrition['protein'] != null ? String(nutrition['protein']) : '',
+      carbs: nutrition['carbs'] != null ? String(nutrition['carbs']) : '',
+      fat: nutrition['fat'] != null ? String(nutrition['fat']) : '',
+    });
+
+    const ingredients = (data.ingredients ?? []).map((ing) => ({
+      ingredientName: ing.ingredientName ?? '',
+      quantity: ing.quantity ?? 1,
+      unit: ing.unit ?? '',
+    }));
+    this.editorIngredients.set(
+      ingredients.length > 0 ? ingredients : [{ ingredientName: '', quantity: 1, unit: '' }],
+    );
+    this.editorIngredientsTouched.set(true);
+  }
+
   /** Submit the current creation mode and return the observable. */
   submitCurrentMode(): Observable<RecipeResponse | unknown> {
     switch (this.activeMethod()) {
       case 'editor':
         return this.#recipeService.addStructuredRecipe(this.buildRequest());
       case 'link':
-        return this.#recipeService.addUrlRecipe(this.urlInput());
+        return this.extract('url', this.urlInput());
       case 'text':
-        return this.#recipeService.addTextRecipe(this.rawTextInput());
+        return this.extract('text', this.rawTextInput());
       case 'image':
         throw new Error('Image upload is not yet implemented');
     }

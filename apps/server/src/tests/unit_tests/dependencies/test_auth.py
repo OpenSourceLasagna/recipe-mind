@@ -1,5 +1,8 @@
+from datetime import datetime, timedelta, timezone
+from logging import WARNING
+from typing import Any
 from unittest.mock import MagicMock
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi import HTTPException
@@ -8,75 +11,190 @@ from fastapi.security import HTTPAuthorizationCredentials
 from src.dependencies.auth import get_current_user_id
 
 
-def _make_credentials(token: str = "fake-token") -> HTTPAuthorizationCredentials:
+_EXPECTED_AUDIENCE = "authenticated"
+_GENERIC_BODY = "Authentication failed"
+_SENTINEL: Any = object()
+
+_SENSITIVE_LEAKS = (
+    "internal supabase secret",
+    "api-key-12345",
+    "Bearer eyJhbGc",
+    "RuntimeError",
+    "network down",
+    "secret",
+    "token",
+)
+
+
+def _credentials(token: str = "fake-token") -> HTTPAuthorizationCredentials:
     return HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
 
 
-class TestGetCurrentUserId:
+def _valid_claims(
+    user_id: UUID | None = None,
+    *,
+    aud: str = _EXPECTED_AUDIENCE,
+    exp_offset: int = 3600,
+    sub: Any = _SENTINEL,
+) -> dict[str, Any]:
+    if user_id is None:
+        user_id = uuid4()
+    if sub is _SENTINEL:
+        sub = str(user_id)
+    now = datetime.now(timezone.utc)
+    return {
+        "claims": {
+            "sub": sub,
+            "aud": aud,
+            "iss": "https://test.supabase.co/auth/v1",
+            "iat": int(now.timestamp()),
+            "exp": int((now + timedelta(seconds=exp_offset)).timestamp()),
+        }
+    }
+
+
+class TestGetCurrentUserIdSuccess:
     def test_returns_user_id_from_valid_claims(self):
         user_id = uuid4()
-        supabase_client = MagicMock()
-        supabase_client.auth.get_claims.return_value = {"claims": {"sub": str(user_id)}}
+        client = MagicMock()
+        client.auth.get_claims.return_value = _valid_claims(user_id)
+        request = MagicMock()
 
-        result = get_current_user_id(supabase_client, _make_credentials())
+        result = get_current_user_id(request, client, _credentials())
 
         assert result == user_id
-        supabase_client.auth.get_claims.assert_called_once_with("fake-token")
+        client.auth.get_claims.assert_called_once_with("fake-token")
 
-    def test_raises_401_when_claims_is_none(self):
-        supabase_client = MagicMock()
-        supabase_client.auth.get_claims.return_value = None
 
-        with pytest.raises(HTTPException) as exc_info:
-            get_current_user_id(supabase_client, _make_credentials())
+class TestGetCurrentUserIdNoLeak:
+    @pytest.mark.parametrize("sensitive", _SENSITIVE_LEAKS)
+    def test_exception_text_never_in_response(self, sensitive):
+        client = MagicMock()
+        client.auth.get_claims.side_effect = RuntimeError(sensitive)
 
-        assert exc_info.value.status_code == 401
-        assert "user not found" in exc_info.value.detail
+        with pytest.raises(HTTPException) as exc:
+            get_current_user_id(client, _credentials())
 
-    def test_raises_401_when_claims_dict_is_none(self):
-        supabase_client = MagicMock()
-        supabase_client.auth.get_claims.return_value = {"claims": None}
+        assert exc.value.status_code == 401
+        assert exc.value.detail == _GENERIC_BODY
+        assert sensitive not in exc.value.detail
 
-        with pytest.raises(HTTPException) as exc_info:
-            get_current_user_id(supabase_client, _make_credentials())
+    def test_claims_none_returns_generic_401(self):
+        client = MagicMock()
+        client.auth.get_claims.return_value = None
 
-        assert exc_info.value.status_code == 401
+        with pytest.raises(HTTPException) as exc:
+            get_current_user_id(client, _credentials())
 
-    def test_raises_401_when_sub_claim_missing(self):
-        supabase_client = MagicMock()
-        supabase_client.auth.get_claims.return_value = {"claims": {}}
+        assert exc.value.status_code == 401
+        assert exc.value.detail == _GENERIC_BODY
 
-        with pytest.raises(HTTPException) as exc_info:
-            get_current_user_id(supabase_client, _make_credentials())
+    def test_inner_claims_none_returns_generic_401(self):
+        client = MagicMock()
+        client.auth.get_claims.return_value = {"claims": None}
 
-        assert exc_info.value.status_code == 401
-        assert "user ID not found" in exc_info.value.detail
+        with pytest.raises(HTTPException) as exc:
+            get_current_user_id(client, _credentials())
 
-    def test_raises_401_when_sub_claim_is_none(self):
-        supabase_client = MagicMock()
-        supabase_client.auth.get_claims.return_value = {"claims": {"sub": None}}
+        assert exc.value.status_code == 401
+        assert exc.value.detail == _GENERIC_BODY
 
-        with pytest.raises(HTTPException) as exc_info:
-            get_current_user_id(supabase_client, _make_credentials())
+    def test_claims_not_dict_returns_generic_401(self):
+        client = MagicMock()
+        client.auth.get_claims.return_value = "not a dict"
 
-        assert exc_info.value.status_code == 401
+        with pytest.raises(HTTPException) as exc:
+            get_current_user_id(client, _credentials())
 
-    def test_raises_401_when_sub_claim_is_malformed_uuid(self):
-        supabase_client = MagicMock()
-        supabase_client.auth.get_claims.return_value = {"claims": {"sub": "not-a-uuid"}}
+        assert exc.value.status_code == 401
+        assert exc.value.detail == _GENERIC_BODY
 
-        with pytest.raises(HTTPException) as exc_info:
-            get_current_user_id(supabase_client, _make_credentials())
+    def test_missing_sub_returns_generic_401(self):
+        client = MagicMock()
+        claims = _valid_claims()
+        del claims["claims"]["sub"]
+        client.auth.get_claims.return_value = claims
 
-        assert exc_info.value.status_code == 401
-        assert "Authentication error" in exc_info.value.detail
+        with pytest.raises(HTTPException) as exc:
+            get_current_user_id(client, _credentials())
 
-    def test_wraps_unexpected_exception_as_401(self):
-        supabase_client = MagicMock()
-        supabase_client.auth.get_claims.side_effect = RuntimeError("network down")
+        assert exc.value.status_code == 401
+        assert exc.value.detail == _GENERIC_BODY
 
-        with pytest.raises(HTTPException) as exc_info:
-            get_current_user_id(supabase_client, _make_credentials())
+    def test_sub_is_none_returns_generic_401(self):
+        client = MagicMock()
+        client.auth.get_claims.return_value = _valid_claims(sub=None)
 
-        assert exc_info.value.status_code == 401
-        assert "network down" in exc_info.value.detail
+        with pytest.raises(HTTPException) as exc:
+            get_current_user_id(client, _credentials())
+
+        assert exc.value.status_code == 401
+        assert exc.value.detail == _GENERIC_BODY
+
+    def test_malformed_sub_uuid_returns_generic_401(self):
+        client = MagicMock()
+        client.auth.get_claims.return_value = _valid_claims(sub="not-a-uuid")
+
+        with pytest.raises(HTTPException) as exc:
+            get_current_user_id(client, _credentials())
+
+        assert exc.value.status_code == 401
+        assert exc.value.detail == _GENERIC_BODY
+
+    def test_exception_text_logged_server_side(self, caplog):
+        client = MagicMock()
+        client.auth.get_claims.side_effect = RuntimeError("internal supabase secret")
+        request = MagicMock()
+
+        with caplog.at_level(WARNING):
+            with pytest.raises(HTTPException) as exc:
+                get_current_user_id(request, client, _credentials())
+
+        assert exc.value.detail == _GENERIC_BODY
+        assert "internal supabase secret" in caplog.text
+
+
+class TestGetCurrentUserIdAudienceValidation:
+    def test_rejects_service_role_audience(self):
+        client = MagicMock()
+        client.auth.get_claims.return_value = _valid_claims(aud="service_role")
+
+        with pytest.raises(HTTPException) as exc:
+            get_current_user_id(client, _credentials())
+
+        assert exc.value.status_code == 401
+        assert exc.value.detail == _GENERIC_BODY
+
+    def test_rejects_anon_audience(self):
+        client = MagicMock()
+        client.auth.get_claims.return_value = _valid_claims(aud="anon")
+
+        with pytest.raises(HTTPException) as exc:
+            get_current_user_id(client, _credentials())
+
+        assert exc.value.status_code == 401
+        assert exc.value.detail == _GENERIC_BODY
+
+    def test_rejects_missing_audience(self):
+        client = MagicMock()
+        claims = _valid_claims()
+        del claims["claims"]["aud"]
+        client.auth.get_claims.return_value = claims
+
+        with pytest.raises(HTTPException) as exc:
+            get_current_user_id(client, _credentials())
+
+        assert exc.value.status_code == 401
+        assert exc.value.detail == _GENERIC_BODY
+
+
+class TestGetCurrentUserIdMissingCredentials:
+    def test_no_credentials_returns_generic_401(self):
+        client = MagicMock()
+
+        with pytest.raises(HTTPException) as exc:
+            get_current_user_id(client, None)
+
+        assert exc.value.status_code == 401
+        assert exc.value.detail == _GENERIC_BODY
+        client.auth.get_claims.assert_not_called()

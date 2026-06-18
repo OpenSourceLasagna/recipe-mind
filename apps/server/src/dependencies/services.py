@@ -11,6 +11,7 @@ from src.services.embeddings.base_embedding_service import BaseEmbeddingService
 from src.services.embeddings.embedding_service import EmbeddingService
 from src.services.embeddings.local_embedding_service import LocalEmbeddingService
 from src.services.normalization_service import NormalizationService
+from src.services.recipe_extraction_service import RecipeExtractionService
 from src.services.recipe_ingestion_service import RecipeIngestionService
 from src.services.recipe_serializer import RecipeSerializerService
 from src.dependencies.db import QueryCacheRepo
@@ -138,7 +139,9 @@ def get_moderation_service(
     openai_client: OpenAIClient, settings: EnvSettings
 ) -> ModerationService:
     return ModerationService(
-        client=openai_client, threshold=settings.moderation_threshold
+        client=openai_client,
+        threshold=settings.moderation_threshold,
+        fail_open=settings.llm_guard_fail_open,
     )
 
 
@@ -155,6 +158,7 @@ def get_prompt_guard_service(settings: EnvSettings) -> PromptGuardService:
             model_name=settings.prompt_guard_model_name,
             threshold=settings.prompt_guard_threshold,
             base_path=settings.local_model_path,
+            fail_open=settings.llm_guard_fail_open,
         )
     return _prompt_guard_service
 
@@ -192,3 +196,15 @@ def get_ai_chef_service(
 
 
 AIChefSvc = Annotated[AIChefService, Depends(get_ai_chef_service)]
+
+
+def get_recipe_extraction_service(
+    openai_client: OpenAIClient,
+    settings: EnvSettings,
+) -> RecipeExtractionService:
+    return RecipeExtractionService(client=openai_client, settings=settings)
+
+
+RecipeExtractor = Annotated[
+    RecipeExtractionService, Depends(get_recipe_extraction_service)
+]

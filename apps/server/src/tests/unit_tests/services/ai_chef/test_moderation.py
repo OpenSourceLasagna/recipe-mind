@@ -46,8 +46,20 @@ async def test_is_safe_high_score(moderation_service: ModerationService):
 
 
 @pytest.mark.asyncio
-async def test_is_safe_api_failure_fails_open(moderation_service: ModerationService):
+async def test_is_safe_api_failure_fails_closed_by_default(
+    moderation_service: ModerationService,
+):
     moderation_service._client.moderations.create.side_effect = RuntimeError("API down")
 
     result = await moderation_service.is_safe("hello")
+    assert result is False
+
+
+@pytest.mark.asyncio
+async def test_is_safe_api_failure_fails_open_when_opted_in():
+    client = AsyncMock()
+    client.moderations.create.side_effect = RuntimeError("API down")
+    service = ModerationService(client=client, threshold=0.5, fail_open=True)
+
+    result = await service.is_safe("hello")
     assert result is True

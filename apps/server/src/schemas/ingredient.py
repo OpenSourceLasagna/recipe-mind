@@ -10,6 +10,8 @@ class RecipeIngredientCreate(CamelModel):
     quantity: float = 1.0
     unit: str = ""
 
+    model_config = ConfigDict(extra="forbid")
+
 
 class RecipeIngredientUpdate(CamelModel):
     id: UUID | None = None
