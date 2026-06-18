@@ -17,6 +17,7 @@ import { RecipeFilterService } from '../../../dashboard/services/recipe-filter.s
 import { RecipeMessageComponent } from '../recipe-message/recipe-message.component';
 import { RecipeResponse } from '../../../dashboard/models/recipe.model';
 import { RecipePatchRequest } from '../../../dashboard/models/recipe-edit.model';
+import { RecipeCardDto } from '../../../dashboard/models/recipe-card.dto';
 
 @Component({
   selector: 'app-chat-message',
@@ -28,79 +29,14 @@ import { RecipePatchRequest } from '../../../dashboard/models/recipe-edit.model'
     HlmSkeletonImports,
     RecipeMessageComponent,
   ],
-  template: `
-    @if (message().role === 'user') {
-      <div class="flex justify-end">
-        <div
-          class="max-w-[85%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-primary-foreground text-sm"
-        >
-          {{ message().content }}
-        </div>
-      </div>
-    } @else if (message().role === 'recipe' && message().recipeContext) {
-      <app-recipe-message
-        [recipeContext]="message().recipeContext!"
-        (collapseClick)="collapseClick.emit(message().id)"
-        (closeClick)="closeClick.emit(message().id)"
-        (editClick)="editClick.emit(message().id)"
-        (saveClick)="saveClick.emit(message().id)"
-        (saveEditClick)="saveEditClick.emit({ messageId: message().id, patch: $event })"
-        (cancelEditClick)="cancelEditClick.emit(message().id)"
-      />
-    } @else {
-      <div class="flex justify-start">
-        <div class="max-w-full prose prose-sm dark:prose-invert text-foreground">
-          <markdown [data]="message().content" />
-          @if (!isPending()) {
-            @if (message().additionalContent; as extra) {
-              @if (!isDesktopResultsMode()) {
-                @if (extra.recipeList ? $any(extra.recipeList) : null; as recipes) {
-                  @for (recipe of recipes; track recipe.id) {
-                    <div class="recipe-card">
-                      <h4>{{ recipe.title }}</h4>
-                      <app-recipe-card
-                        [recipe]="recipe"
-                        (cardClick)="handleRecipeCardClick(recipe.id)"
-                      />
-                    </div>
-                  }
-                }
-              } @else {
-                @if (extra.recipeList; as recipes) {
-                  <p class="text-sm text-muted-foreground not-prose">
-                    Found {{ recipes.length }} recipe{{ recipes.length === 1 ? '' : 's' }}
-                  </p>
-                }
-              }
-              @if (extra.recipeDraft ? $any(extra.recipeDraft) : null; as draft) {
-                <app-recipe-detail-view [recipe]="draft" />
-              }
-            }
-          } @else {
-            @if (message().additionalContent; as preview) {
-              @if (preview.recipeList ? $any(preview.recipeList) : null; as recipes) {
-                <p class="text-sm text-muted-foreground not-prose">
-                  Found {{ recipes.length }} recipe{{ recipes.length === 1 ? '' : 's' }}
-                </p>
-              }
-              @if (preview.recipeDraft) {
-                <div class="space-y-2 not-prose">
-                  <div hlmSkeleton class="h-6 w-3/4"></div>
-                  <div hlmSkeleton class="h-4 w-full"></div>
-                  <div hlmSkeleton class="h-4 w-5/6"></div>
-                </div>
-              }
-            }
-          }
-        </div>
-      </div>
-    }
-  `,
+  templateUrl: './chat-message.component.html',
+  styleUrl: './chat-message.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChatMessageComponent {
   readonly message = input.required<PanelChatMessage>();
   readonly isPending = input<boolean>(false);
+  readonly isFocused = input<boolean>(false);
 
   readonly collapseClick = output<number>();
   readonly closeClick = output<number>();
@@ -109,6 +45,8 @@ export class ChatMessageComponent {
   readonly saveEditClick = output<{ messageId: number; patch: RecipePatchRequest }>();
   readonly cancelEditClick = output<number>();
   readonly expandRecipe = output<RecipeResponse>();
+  readonly highlightEnd = output<void>();
+  readonly activateClick = output<number>();
 
   private readonly chatStore = inject(ChatStore);
   private readonly filterService = inject(RecipeFilterService);
@@ -117,6 +55,23 @@ export class ChatMessageComponent {
   readonly isDesktopResultsMode = computed(
     () => this.chatStore.hasAiResults() && this.filterService.isDesktop(),
   );
+
+  readonly isMobile = computed(() => this.filterService.isMobile());
+
+  readonly messageClasses = computed(() => {
+    const classes = ['transition-all duration-500'];
+    if (this.isFocused()) {
+      classes.push('ring-2 ring-primary ring-offset-2 ring-offset-background rounded-lg');
+      classes.push('animate-highlight-pulse');
+    }
+    return classes.join(' ');
+  });
+
+  onHighlightAnimationEnd(): void {
+    if (this.isFocused()) {
+      this.highlightEnd.emit();
+    }
+  }
 
   handleRecipeCardClick(recipeId: string): void {
     if (this.filterService.isDesktop()) {
@@ -127,6 +82,17 @@ export class ChatMessageComponent {
         this.expandRecipe.emit(recipe);
       }
     }
+  }
+
+  mapRecipeToCardDto(recipe: RecipeResponse): RecipeCardDto {
+    return {
+      id: recipe.id,
+      title: recipe.title,
+      difficulty: recipe.difficulty,
+      spice_level: recipe.spiceLevel,
+      durationMinutes: recipe.durationMinutes,
+      servings: recipe.servings,
+    };
   }
 
   private getRecipeById(recipeId: string): RecipeResponse | null {

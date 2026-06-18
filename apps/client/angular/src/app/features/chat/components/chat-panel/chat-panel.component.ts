@@ -56,6 +56,7 @@ export class ChatPanelComponent {
 
   readonly contextRecipeId = this.store.contextRecipeId;
   readonly contextExcluded = this.store.contextExcluded;
+  readonly focusedMessageId = this.store.focusedMessageId;
 
   readonly loadingStatus = computed<{ isLoading: boolean; message?: string }>(() => {
     const status = this.#pendingMessage()?.status;
@@ -89,6 +90,13 @@ export class ChatPanelComponent {
       const _loading = this.store.isLoading();
       untracked(() => this.scrollToBottom());
     });
+
+    effect(() => {
+      const focusedId = this.focusedMessageId();
+      if (focusedId !== null) {
+        untracked(() => this.scrollToMessage(focusedId));
+      }
+    });
   }
 
   send(event: Event): void {
@@ -118,17 +126,42 @@ export class ChatPanelComponent {
     const recipeId = this.contextRecipeId();
     if (!recipeId) return;
 
-    const recipe = this.#detailService.recipe.value();
-    if (!recipe) return;
+    const existingMessageId = this.store.findRecipeMessageId(recipeId);
+    if (existingMessageId !== null) {
+      this.store.activateRecipeMessage(existingMessageId);
+      this.store.focusRecipeMessage(existingMessageId);
+      return;
+    }
+    untracked(() => {
+      const recipe = this.#detailService.recipe.value();
+      if (!recipe) return;
 
-    const originalRecipe = recipe as unknown as RecipeResponse;
-    const modifiedRecipe = recipe.modifiedRecipe as unknown as RecipeResponse | undefined;
-
-    this.store.expandRecipe(originalRecipe, modifiedRecipe);
+      this.store.expandRecipe(
+        recipe as unknown as RecipeResponse,
+        recipe.modifiedRecipe as unknown as RecipeResponse | undefined,
+      );
+      const newMessageId = this.store.findRecipeMessageId(recipeId);
+      if (newMessageId !== null) {
+        this.store.focusRecipeMessage(newMessageId);
+      }
+    });
   }
 
   onRecipeCardExpand(recipe: RecipeResponse): void {
-    this.store.expandRecipe(recipe);
+    const existingMessageId = this.store.findRecipeMessageId(recipe.id);
+    if (existingMessageId !== null) {
+      this.store.activateRecipeMessage(existingMessageId);
+      this.store.focusRecipeMessage(existingMessageId);
+      return;
+    }
+
+    untracked(() => {
+      this.store.expandRecipe(recipe);
+      const newMessageId = this.store.findRecipeMessageId(recipe.id);
+      if (newMessageId !== null) {
+        this.store.focusRecipeMessage(newMessageId);
+      }
+    });
   }
 
   onCollapseClick(messageId: number): void {
@@ -136,7 +169,7 @@ export class ChatPanelComponent {
   }
 
   onCloseClick(messageId: number): void {
-    this.store.collapseRecipe(messageId);
+    this.store.removeRecipeMessage(messageId);
   }
 
   onEditClick(messageId: number): void {
@@ -156,8 +189,24 @@ export class ChatPanelComponent {
     this.store.setRecipeEditing(messageId, false);
   }
 
+  onActivateClick(messageId: number): void {
+    this.store.activateRecipeMessage(messageId);
+  }
+
+  onHighlightEnd(): void {
+    this.store.clearFocusedMessage();
+  }
+
   private scrollToBottom(): void {
     const el = this.scrollContainer().nativeElement;
     el.scrollTop = el.scrollHeight;
+  }
+
+  private scrollToMessage(messageId: number): void {
+    const el = this.scrollContainer().nativeElement;
+    const messageElement = el.querySelector(`[data-message-id="${messageId}"]`);
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   }
 }

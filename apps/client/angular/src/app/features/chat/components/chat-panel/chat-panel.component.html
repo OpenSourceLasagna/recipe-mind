@@ -35,10 +35,11 @@
       </div>
     }
 
-    @for (msg of messages(); track msg.id) {
+    @for (msg of messages(); track msg.id + ':' + msg.role) {
       <app-chat-message
         [message]="msg"
         [isPending]="msg.isPending ?? false"
+        [isFocused]="focusedMessageId() === msg.id"
         (expandRecipe)="onRecipeCardExpand($event)"
         (collapseClick)="onCollapseClick($event)"
         (closeClick)="onCloseClick($event)"
@@ -46,6 +47,8 @@
         (saveClick)="onSaveClick($event)"
         (saveEditClick)="onSaveEditClick($event)"
         (cancelEditClick)="onCancelEditClick($event)"
+        (activateClick)="onActivateClick($event)"
+        (highlightEnd)="onHighlightEnd()"
       />
     }
 

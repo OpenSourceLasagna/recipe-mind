@@ -265,13 +265,17 @@ class AIChefService:
         if result.recipes:
             yield format_sse(
                 "recipe_list",
-                {"recipes": [r.model_dump(mode="json") for r in result.recipes]},
+                {
+                    "recipes": [
+                        r.model_dump(by_alias=True, mode="json") for r in result.recipes
+                    ]
+                },
             )
         if result.draft:
             yield format_sse(
                 "recipe_draft",
                 {
-                    "draft": result.draft.model_dump(mode="json"),
+                    "draft": result.draft.model_dump(by_alias=True, mode="json"),
                     "changed_fields": result.changed_fields,
                 },
             )

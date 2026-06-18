@@ -7,15 +7,16 @@ import {
   output,
 } from '@angular/core';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { heroEye, heroEyeSlash, heroSparkles } from '@ng-icons/heroicons/outline';
+import { heroArrowRight, heroEye, heroEyeSlash, heroSparkles } from '@ng-icons/heroicons/outline';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { RecipeDetailService } from '../../../dashboard/services/recipe-detail.service';
+import { RecipeFilterService } from '../../../dashboard/services/recipe-filter.service';
 
 @Component({
   selector: 'app-context-recipe-card',
   standalone: true,
   imports: [NgIcon, HlmButton],
-  providers: [provideIcons({ heroEye, heroEyeSlash, heroSparkles })],
+  providers: [provideIcons({ heroArrowRight, heroEye, heroEyeSlash, heroSparkles })],
   template: `
     <div class="rounded-lg border border-border bg-muted/30 px-3 py-2">
       <div class="flex items-center justify-between gap-2">
@@ -46,16 +47,18 @@ import { RecipeDetailService } from '../../../dashboard/services/recipe-detail.s
               [class.text-primary]="!excluded()"
             />
           </button>
-          <button
-            hlmBtn
-            variant="ghost"
-            size="sm"
-            type="button"
-            class="h-7 text-xs"
-            (click)="expandClick.emit()"
-          >
-            View in chat
-          </button>
+          @if (isMobile()) {
+            <button
+              hlmBtn
+              variant="ghost"
+              size="sm"
+              type="button"
+              class="h-7 text-xs"
+              (click)="expandClick.emit()"
+            >
+              View in chat
+            </button>
+          }
         </div>
       </div>
       @if (excluded()) {
@@ -75,7 +78,9 @@ export class ContextRecipeCardComponent {
   readonly toggleExcluded = output<void>();
 
   private readonly detailService = inject(RecipeDetailService);
+  private readonly filterService = inject(RecipeFilterService);
 
+  readonly isMobile = computed(() => this.filterService.isMobile());
   readonly recipeTitle = computed(() => {
     const recipe = this.detailService.recipe.value();
     if (recipe?.id === this.recipeId()) {

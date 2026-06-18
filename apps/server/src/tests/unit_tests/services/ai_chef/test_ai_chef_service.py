@@ -702,3 +702,53 @@ class TestParseFinalOutput:
 
         assert result.draft is not None
         assert result.draft.title == "New"
+
+
+class TestRecipeSerialization:
+    def test_recipe_list_dump_uses_camelcase_aliases(self):
+        from datetime import UTC, datetime
+
+        from src.schemas.ingredient import RecipeIngredientResponse
+        from src.schemas.recipe import RecipeResponse
+
+        ingredient = RecipeIngredientResponse(
+            id=uuid4(),
+            ingredient_name="Pasta",
+            quantity=200,
+            unit="g",
+            category_id=None,
+        )
+        recipe = RecipeResponse(
+            id=uuid4(),
+            title="Vegan Pasta",
+            additional_information=["Great for weeknights"],
+            instruction_steps=["Boil water", "Add pasta"],
+            nutrition={"calories": 400},
+            servings=4,
+            duration_minutes=30,
+            difficulty="easy",
+            spice_level=2,
+            origin="Italian",
+            is_public=True,
+            ingredients=[ingredient],
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
+
+        dumped = recipe.model_dump(by_alias=True, mode="json")
+
+        assert dumped["title"] == "Vegan Pasta"
+        assert dumped["additionalInformation"] == ["Great for weeknights"]
+        assert dumped["instructionSteps"] == ["Boil water", "Add pasta"]
+        assert dumped["spiceLevel"] == 2
+        assert dumped["durationMinutes"] == 30
+        assert dumped["isPublic"] is True
+        assert dumped["createdAt"] is not None
+        assert dumped["updatedAt"] is not None
+
+        assert len(dumped["ingredients"]) == 1
+        ingredient_dump = dumped["ingredients"][0]
+        assert ingredient_dump["ingredientName"] == "Pasta"
+        assert ingredient_dump["quantity"] == 200
+        assert ingredient_dump["unit"] == "g"
+        assert ingredient_dump["categoryId"] is None

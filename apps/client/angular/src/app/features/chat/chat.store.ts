@@ -13,6 +13,7 @@ export class ChatStore {
   readonly #activeRecipeId = signal<string | null>(null);
   readonly #contextRecipeId = signal<string | null>(null);
   readonly #contextExcluded = signal(false);
+  readonly #focusedMessageId = signal<number | null>(null);
 
   readonly messages = this.#messages.asReadonly();
   readonly isOpen = this.#isOpen.asReadonly();
@@ -23,6 +24,7 @@ export class ChatStore {
   readonly activeRecipeId = this.#activeRecipeId.asReadonly();
   readonly contextRecipeId = this.#contextRecipeId.asReadonly();
   readonly contextExcluded = this.#contextExcluded.asReadonly();
+  readonly focusedMessageId = this.#focusedMessageId.asReadonly();
   readonly effectiveContextRecipeId = computed(() => {
     if (this.#contextRecipeId() && !this.#contextExcluded()) {
       return this.#contextRecipeId();
@@ -80,11 +82,30 @@ export class ChatStore {
     this.#activeRecipeId.set(recipeId);
   }
 
+  isRecipeExpanded(recipeId: string): boolean {
+    return this.#messages().some(
+      (msg) => msg.role === 'recipe' && msg.recipeContext?.originalRecipe.id === recipeId,
+    );
+  }
+
+  findRecipeMessageId(recipeId: string): number | null {
+    const message = this.#messages().find(
+      (msg) => msg.role === 'recipe' && msg.recipeContext?.originalRecipe.id === recipeId,
+    );
+    return message?.id ?? null;
+  }
+
   expandRecipe(
     originalRecipe: RecipeResponse,
     modifiedRecipe?: RecipeResponse,
     changedFields?: string[],
   ): void {
+    if (this.isRecipeExpanded(originalRecipe.id)) {
+      return;
+    }
+
+    this.#deactivateAllRecipes();
+
     const recipeContext: RecipeContext = {
       originalRecipe,
       modifiedRecipe,
@@ -102,6 +123,119 @@ export class ChatStore {
     this.setActiveRecipe(originalRecipe.id);
   }
 
+  activateRecipeMessage(messageId: number): void {
+    this.#deactivateAllRecipes();
+    this.#messages.update((msgs) =>
+      msgs.map((msg) => {
+        if (msg.id === messageId && msg.recipeContext) {
+          return {
+            ...msg,
+            recipeContext: { ...msg.recipeContext, isActive: true },
+          };
+        }
+        return msg;
+      }),
+    );
+    const activated = this.#messages().find((m) => m.id === messageId);
+    this.setActiveRecipe(activated?.recipeContext?.originalRecipe.id ?? null);
+  }
+
+  removeRecipeMessage(messageId: number): void {
+    const message = this.#messages().find((msg) => msg.id === messageId);
+
+    if (message?.role === 'recipe' && message.recipeContext) {
+      this.#updateActiveAfterRemoval(message);
+    }
+
+    this.#messages.update((msgs) => msgs.filter((msg) => msg.id !== messageId));
+  }
+
+  removeAllRecipeMessages(): RecipeCardDto[] {
+    const recipeMessages = this.#messages().filter(
+      (msg) => msg.role === 'recipe' && msg.recipeContext,
+    );
+
+    const cardDtos: RecipeCardDto[] = recipeMessages.map((msg) => {
+      const recipe = msg.recipeContext!.originalRecipe;
+      return {
+        id: recipe.id,
+        title: recipe.title,
+        difficulty: recipe.difficulty,
+        spice_level: recipe.spiceLevel,
+        durationMinutes: recipe.durationMinutes,
+        servings: recipe.servings,
+      };
+    });
+
+    this.#messages.update((msgs) => msgs.filter((msg) => msg.role !== 'recipe'));
+    this.setActiveRecipe(null);
+
+    return cardDtos;
+  }
+
+  extractRecipeCardDtos(): RecipeCardDto[] {
+    return this.#messages()
+      .filter((msg) => msg.role === 'recipe' && msg.recipeContext)
+      .map((msg) => {
+        const recipe = msg.recipeContext!.originalRecipe;
+        return {
+          id: recipe.id,
+          title: recipe.title,
+          difficulty: recipe.difficulty,
+          spice_level: recipe.spiceLevel,
+          durationMinutes: recipe.durationMinutes,
+          servings: recipe.servings,
+        };
+      });
+  }
+
+  findFirstRecipeMessageId(): number | null {
+    const first = this.#messages().find((msg) => msg.role === 'recipe' && msg.recipeContext);
+    return first?.id ?? null;
+  }
+
+  #updateActiveAfterRemoval(message: ChatMessage): void {
+    const removedRecipeId = message.recipeContext!.originalRecipe.id;
+
+    if (this.#activeRecipeId() !== removedRecipeId) {
+      return;
+    }
+
+    const next = [...this.#messages()]
+      .reverse()
+      .find(
+        (msg) => msg.id !== message.id && msg.role === 'recipe' && msg.recipeContext !== undefined,
+      );
+
+    if (next) {
+      this.activateRecipeMessage(next.id);
+    } else {
+      this.setActiveRecipe(null);
+    }
+  }
+
+  #deactivateAllRecipes(): void {
+    this.#messages.update((msgs) =>
+      msgs.map((msg) => {
+        if (msg.role === 'recipe' && msg.recipeContext?.isActive) {
+          return {
+            ...msg,
+            recipeContext: { ...msg.recipeContext, isActive: false },
+          };
+        }
+        return msg;
+      }),
+    );
+  }
+
+  focusRecipeMessage(messageId: number): void {
+    this.#focusedMessageId.set(messageId);
+  }
+
+  clearFocusedMessage(): void {
+    this.#focusedMessageId.set(null);
+  }
+
   collapseRecipe(messageId: number): void {
     this.#messages.update((msgs) =>
       msgs.map((msg) => {
@@ -117,11 +251,15 @@ export class ChatStore {
 
     const collapsedMessage = this.#messages().find((m) => m.id === messageId);
     if (collapsedMessage?.recipeContext?.originalRecipe.id === this.#activeRecipeId()) {
-      const lastExpanded = [...this.#messages()]
+      const next = [...this.#messages()]
         .reverse()
-        .find((m) => m.role === 'recipe' && m.recipeContext?.isActive);
+        .find((m) => m.id !== messageId && m.role === 'recipe' && m.recipeContext !== undefined);
 
-      this.setActiveRecipe(lastExpanded?.recipeContext?.originalRecipe.id ?? null);
+      if (next) {
+        this.activateRecipeMessage(next.id);
+      } else {
+        this.setActiveRecipe(null);
+      }
     }
   }
 
@@ -156,5 +294,6 @@ export class ChatStore {
     this.#activeRecipeId.set(null);
     this.#contextRecipeId.set(null);
     this.#contextExcluded.set(false);
+    this.#focusedMessageId.set(null);
   }
 }

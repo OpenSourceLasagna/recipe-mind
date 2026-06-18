@@ -12,6 +12,7 @@ import { RecipeMetaBarComponent } from '../../../../shared/components/recipe-met
   standalone: true,
   imports: [HlmCardImports, RecipeMetaBarComponent],
   templateUrl: './recipe-card.component.html',
+  styleUrl: './recipe-card.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecipeCardComponent {

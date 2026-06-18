@@ -36,10 +36,14 @@ import { RecipePatchRequest } from '../../../dashboard/models/recipe-edit.model'
       heroXMark,
     }),
   ],
+  styleUrl: './recipe-message.component.css',
   template: `
-    <div class="rounded-lg border border-border bg-card overflow-hidden">
+    <div class="rounded-lg border border-border bg-card overflow-hidden max-w-full">
       <!-- Header -->
-      <div class="flex items-center justify-between gap-2 px-3 py-2 bg-muted/50 border-b border-border">
+      <div
+        class="flex items-center justify-between gap-2 px-3 py-2 bg-muted/50 border-b border-border cursor-pointer"
+        (click)="onActivateClick($event)"
+      >
         <div class="flex items-center gap-2 min-w-0">
           @if (recipeContext().isActive) {
             <hlm-badge variant="default" class="shrink-0">
@@ -64,8 +68,8 @@ import { RecipePatchRequest } from '../../../dashboard/models/recipe-edit.model'
             size="icon"
             type="button"
             aria-label="Save recipe"
-            class="size-7 text-muted-foreground hover:text-primary"
-            (click)="saveClick.emit()"
+            class="size-7 text-muted-foreground md:hover:text-primary"
+            (click)="onSaveClick($event)"
           >
             <ng-icon hlm name="heroSparkles" class="size-4" />
           </button>
@@ -76,7 +80,7 @@ import { RecipePatchRequest } from '../../../dashboard/models/recipe-edit.model'
             type="button"
             [attr.aria-label]="isExpanded() ? 'Collapse recipe' : 'Expand recipe'"
             class="size-7"
-            (click)="toggleExpanded()"
+            (click)="onToggleExpand($event)"
           >
             <ng-icon hlm [name]="isExpanded() ? 'heroChevronUp' : 'heroChevronDown'" class="size-4" />
           </button>
@@ -86,8 +90,8 @@ import { RecipePatchRequest } from '../../../dashboard/models/recipe-edit.model'
             size="icon"
             type="button"
             aria-label="Close recipe"
-            class="size-7 text-muted-foreground hover:text-destructive"
-            (click)="closeClick.emit()"
+            class="size-7 text-muted-foreground md:hover:text-destructive"
+            (click)="onCloseClick($event)"
           >
             <ng-icon hlm name="heroXMark" class="size-4" />
           </button>
@@ -96,8 +100,9 @@ import { RecipePatchRequest } from '../../../dashboard/models/recipe-edit.model'
 
       <!-- Content -->
       @if (isExpanded()) {
-        <div class="p-3">
+        <div class="recipe-detail-wrapper p-3">
           <app-recipe-detail-view
+            class="recipe-detail-view-container"
             [recipe]="recipeContext().originalRecipe"
             [modifiedRecipe]="recipeContext().modifiedRecipe ?? null"
             [isOwner]="true"
@@ -110,7 +115,10 @@ import { RecipePatchRequest } from '../../../dashboard/models/recipe-edit.model'
         </div>
       } @else {
         <!-- Collapsed preview -->
-        <div class="px-3 py-2 text-sm text-muted-foreground">
+        <div
+          class="px-3 py-2 text-sm text-muted-foreground cursor-pointer"
+          (click)="onActivateClick($event)"
+        >
           <span class="font-medium text-foreground">
             {{ recipeContext().originalRecipe.difficulty | titlecase }}
           </span>
@@ -134,16 +142,36 @@ export class RecipeMessageComponent {
   readonly saveClick = output<void>();
   readonly saveEditClick = output<RecipePatchRequest>();
   readonly cancelEditClick = output<void>();
+  readonly activateClick = output<void>();
 
   readonly isExpanded = signal(true);
   readonly viewMode = signal<'original' | 'modified'>('original');
 
   readonly hasModified = computed(() => !!this.recipeContext().modifiedRecipe);
 
-  toggleExpanded(): void {
+  onToggleExpand(event: Event): void {
+    event.stopPropagation();
     this.isExpanded.update((v) => !v);
-    if (!this.isExpanded()) {
+    if (this.isExpanded()) {
+      this.activateClick.emit();
+    } else {
       this.collapseClick.emit();
     }
+  }
+
+  onCloseClick(event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.closeClick.emit();
+  }
+
+  onActivateClick(event: Event): void {
+    event.stopPropagation();
+    this.activateClick.emit();
+  }
+
+  onSaveClick(event: Event): void {
+    event.stopPropagation();
+    this.saveClick.emit();
   }
 }
