@@ -81,7 +81,7 @@ class TestAppMetadata:
         assert "RAG-powered" in app.description
 
     def test_routers_registered(self, app: FastAPI):
-        route_paths = [r.path for r in app.routes]
+        route_paths = [r.path for r in app.routes if hasattr(r, "path")]
         assert "/health" in route_paths
         assert "/" in route_paths
 

@@ -1,3 +1,18 @@
+import os
+
+# Set default env vars for test environment to satisfy Settings() validation.
+# These are only used when the actual .env file is not present (e.g. in CI).
+os.environ.setdefault("SUPABASE_URL", "https://test.supabase.co")
+os.environ.setdefault("SUPABASE_KEY", "test-key")
+os.environ.setdefault(
+    "DATABASE_URL", "postgresql+asyncpg://test:test@localhost:5432/test"
+)
+os.environ.setdefault("OPENAI_API_KEY", "test-key")
+os.environ.setdefault("EMBEDDING_MODEL_NAME", "text-embedding-3-small")
+os.environ.setdefault("EMBEDDING_SIZE", "1536")
+os.environ.setdefault("LOCAL_EMBEDDING_MODEL_NAME", "nomic-ai/nomic-embed-text-v1.5")
+os.environ.setdefault("LOCAL_EMBEDDING_SIZE", "768")
+
 from collections.abc import Callable
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, Mock
