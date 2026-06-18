@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -6,6 +6,14 @@ from src.services.normalization_service import NormalizationService
 
 
 class TestNormalizationService:
+    @pytest.fixture(autouse=True)
+    def _patch_lemmatizer(self):
+        with patch("src.services.normalization_service.WordNetLemmatizer") as mock_cls:
+            mock_instance = MagicMock()
+            mock_instance.lemmatize.side_effect = lambda w: w
+            mock_cls.return_value = mock_instance
+            yield
+
     def test_normalize_word_strips_whitespace(self):
         service = NormalizationService()
         result = service.normalize_word("  Hello World  ")
