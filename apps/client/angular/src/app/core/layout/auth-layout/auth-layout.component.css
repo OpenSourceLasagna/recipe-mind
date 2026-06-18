@@ -1,0 +1,18 @@
+.hero-image-mask {
+  mask-image: linear-gradient(to right, black 70%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 70%, transparent 100%);
+}
+
+@media (min-width: 768px) {
+  .auth-desktop-bg {
+    background: linear-gradient(
+      to right,
+      black 0%,
+      black 50%,
+      rgba(23, 36, 27, 0.5) 58%,
+      rgba(39, 53, 36, 0.25) 66%,
+      rgba(11, 18, 16, 0.08) 74%,
+      #f9fafb 82%
+    );
+  }
+}

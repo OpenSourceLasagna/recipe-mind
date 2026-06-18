@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy, input, signal, effect, output } fro
 import { ReactiveFormsModule } from '@angular/forms';
 import { HlmInputGroupImports } from '@spartan-ng/helm/input-group';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { heroAtSymbol, heroKey } from '@ng-icons/heroicons/outline';
+import { heroAtSymbol, heroExclamationCircle, heroKey } from '@ng-icons/heroicons/outline';
 import { HlmInputImports } from '@spartan-ng/helm/input';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmFieldImports } from '@spartan-ng/helm/field';
@@ -22,6 +22,8 @@ import { PasswordInputComponent } from '../password-input/password-input.compone
 import { LoginMode } from '../../models/login-mode';
 import { EmailFormModel } from '../../models/email-form-model';
 
+let emailErrorIdCounter = 0;
+
 @Component({
   selector: 'app-email-form',
   imports: [
@@ -36,7 +38,7 @@ import { EmailFormModel } from '../../models/email-form-model';
   ],
   templateUrl: './email-form.component.html',
   styleUrl: './email-form.component.css',
-  providers: [provideIcons({ email: heroAtSymbol, key: heroKey })],
+  providers: [provideIcons({ email: heroAtSymbol, key: heroKey, error: heroExclamationCircle })],
   host: { class: 'grid w-full max-w-sm gap-6' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -49,7 +51,11 @@ export class EmailFormComponent {
   };
   mode = input<LoginMode>('login');
   authError = input<string | null>(null);
+  showForgotPassword = input<boolean>(false);
   readonly submitForm = output<Pick<EmailFormModel, 'email' | 'password'>>();
+  readonly forgotPassword = output<void>();
+
+  readonly emailErrorId = `email-error-${++emailErrorIdCounter}`;
 
   emailLoginForm = form(signal<EmailFormModel>({ ...this.#INITIAL_MODEL }), (schema) => {
     (required(schema.email, { message: 'Email is required' }),

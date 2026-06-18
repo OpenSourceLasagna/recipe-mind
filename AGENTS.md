@@ -151,6 +151,7 @@ alembic upgrade head
 ```bash
 cd apps/client/angular
 npm install
+# Edit environment.ts with your real Supabase and API values
 ng serve
 ```
 

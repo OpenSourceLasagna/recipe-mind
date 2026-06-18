@@ -26,6 +26,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Create environment.ts for CI
+        run: cp src/environments/environment.example.ts src/environments/environment.ts
+
       - run: npm run lint
 
       - run: npm run typecheck

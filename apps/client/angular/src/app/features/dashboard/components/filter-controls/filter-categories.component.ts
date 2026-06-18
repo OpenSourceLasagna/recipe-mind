@@ -54,7 +54,7 @@ export class FilterCategoriesComponent implements ControlValueAccessor {
   #onChange?: ChangeFn<string | null>;
   #onTouched?: TouchFn;
 
-  onValueChange(v: string[] | null): void {
+  onValueChange(v: string[] | null | undefined): void {
     const str = v?.length ? v.join(',') : null;
     this._selectedValues.set(v ?? []);
     this.#onChange?.(str);
