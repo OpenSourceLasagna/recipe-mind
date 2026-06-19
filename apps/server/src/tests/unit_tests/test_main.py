@@ -1,5 +1,4 @@
 from unittest.mock import MagicMock, patch
-from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi import FastAPI, Request
@@ -45,15 +44,6 @@ def _reset_rate_limiters():
     reset_all_rate_limiters()
 
 
-@pytest.fixture(autouse=True)
-def _reset_rate_limiters():
-    from src.middleware.rate_limit import reset_all_rate_limiters
-
-    reset_all_rate_limiters()
-    yield
-    reset_all_rate_limiters()
-
-
 @pytest.fixture
 def app(_patch_lifespan_dependencies, _set_test_env_vars) -> FastAPI:
     from src.main import app
@@ -68,56 +58,6 @@ def client(app: FastAPI) -> TestClient:
 
 
 @pytest.fixture
-def db_healthy(monkeypatch):
-    async def _check():
-        return "healthy"
-
-    monkeypatch.setattr("src.main._check_database", _check)
-
-
-@pytest.fixture
-def db_unhealthy(monkeypatch):
-    async def _check():
-        return "unhealthy"
-
-    monkeypatch.setattr("src.main._check_database", _check)
-
-
-@pytest.fixture
-def openai_initialized(monkeypatch):
-    from src.dependencies import clients as clients_module
-
-    monkeypatch.setattr(clients_module, "openai_client", MagicMock(), raising=False)
-
-
-@pytest.fixture
-def openai_uninitialized(monkeypatch):
-    from src.dependencies import clients as clients_module
-
-    monkeypatch.delattr(clients_module, "openai_client", raising=False)
-
-
-@pytest.fixture
-def supabase_initialized(monkeypatch):
-    from src.dependencies import clients as clients_module
-
-    monkeypatch.setattr(clients_module, "supabase_client", MagicMock(), raising=False)
-
-
-@pytest.fixture
-def supabase_uninitialized(monkeypatch):
-    from src.dependencies import clients as clients_module
-
-    monkeypatch.delattr(clients_module, "supabase_client", raising=False)
-
-
-@pytest.fixture
-def all_healthy(
-    db_healthy,
-    openai_initialized,
-    supabase_initialized,
-):
-    pass
 def db_healthy(monkeypatch):
     async def _check():
         return "healthy"
@@ -254,24 +194,6 @@ class TestCorsStartupGuard:
         assert "Content-Type" in allowed
 
 
-class TestCorsStartupGuard:
-    def test_wildcard_origin_with_credentials_raises(self):
-        from src.main import _validate_cors_origins
-
-        with pytest.raises(ValueError, match="not allowed with allow_credentials"):
-            _validate_cors_origins({"*"})
-
-    def test_explicit_origin_passes(self):
-        from src.main import _validate_cors_origins
-
-        _validate_cors_origins({"http://localhost:4200"})
-
-    def test_empty_origins_passes(self):
-        from src.main import _validate_cors_origins
-
-        _validate_cors_origins(set())
-
-
 class TestRootEndpoint:
     def test_root_returns_info(self, client: TestClient):
         response = client.get("/")
@@ -283,34 +205,8 @@ class TestRootEndpoint:
         assert data["docs"] == "/docs"
         assert data["health"]["live"] == "/health/live"
         assert data["health"]["ready"] == "/health/ready"
-        assert data["health"]["live"] == "/health/live"
-        assert data["health"]["ready"] == "/health/ready"
 
 
-class TestLiveness:
-    def test_live_returns_200(self, client: TestClient):
-        response = client.get("/health/live")
-
-        assert response.status_code == 200
-        assert response.json() == {"status": "alive"}
-
-    def test_live_does_not_query_database(self, client: TestClient, monkeypatch):
-        called = {"db": False}
-
-        async def _check():
-            called["db"] = True
-            return "healthy"
-
-        monkeypatch.setattr("src.main._check_database", _check)
-
-        client.get("/health/live")
-
-        assert called["db"] is False
-
-
-class TestReadinessAllHealthy:
-    def test_ready_returns_200(self, client: TestClient, all_healthy):
-        response = client.get("/health/ready")
 class TestLiveness:
     def test_live_returns_200(self, client: TestClient):
         response = client.get("/health/live")
@@ -373,49 +269,9 @@ class TestReadinessOpenAIDown:
         supabase_initialized,
     ):
         response = client.get("/health/ready")
-        assert data == {
-            "status": "ready",
-            "database": "healthy",
-            "ai": "healthy",
-            "supabase": "healthy",
-        }
-
-
-class TestReadinessDatabaseDown:
-    def test_db_unhealthy_returns_503(
-        self,
-        client: TestClient,
-        db_unhealthy,
-        openai_initialized,
-        supabase_initialized,
-    ):
-        response = client.get("/health/ready")
 
         assert response.status_code == 503
         data = response.json()
-        assert data["status"] == "not_ready"
-        assert data["database"] == "unhealthy"
-        assert data["ai"] == "healthy"
-        assert data["supabase"] == "healthy"
-
-
-class TestReadinessOpenAIDown:
-    def test_openai_uninitialized_returns_503(
-        self,
-        client: TestClient,
-        db_healthy,
-        openai_uninitialized,
-        supabase_initialized,
-    ):
-        response = client.get("/health/ready")
-
-        assert response.status_code == 503
-        assert response.status_code == 503
-        data = response.json()
-        assert data["status"] == "not_ready"
-        assert data["ai"] == "unhealthy"
-        assert data["database"] == "healthy"
-        assert data["supabase"] == "healthy"
         assert data["status"] == "not_ready"
         assert data["ai"] == "unhealthy"
         assert data["database"] == "healthy"
@@ -447,48 +303,9 @@ class TestReadinessSupabaseDown:
         supabase_uninitialized,
     ):
         response = client.get("/health/ready")
-    def test_openai_set_to_none_returns_503(
-        self,
-        client: TestClient,
-        db_healthy,
-        supabase_initialized,
-        monkeypatch,
-    ):
-        from src.dependencies import clients as clients_module
 
-        monkeypatch.setattr(clients_module, "openai_client", None, raising=False)
-
-        response = client.get("/health/ready")
-
-        assert response.status_code == 503
-        assert response.json()["ai"] == "unhealthy"
-
-
-class TestReadinessSupabaseDown:
-    def test_supabase_uninitialized_returns_503(
-        self,
-        client: TestClient,
-        db_healthy,
-        openai_initialized,
-        supabase_uninitialized,
-    ):
-        response = client.get("/health/ready")
-
-        assert response.status_code == 503
         assert response.status_code == 503
         data = response.json()
-        assert data["status"] == "not_ready"
-        assert data["supabase"] == "unhealthy"
-        assert data["database"] == "healthy"
-        assert data["ai"] == "healthy"
-
-
-class TestHealthBackwardCompat:
-    def test_legacy_health_path_aliases_ready(
-        self,
-        client: TestClient,
-        all_healthy,
-    ):
         assert data["status"] == "not_ready"
         assert data["supabase"] == "unhealthy"
         assert data["database"] == "healthy"
@@ -506,15 +323,7 @@ class TestHealthBackwardCompat:
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "ready"
-        assert data["status"] == "ready"
 
-    def test_legacy_health_returns_503_when_not_ready(
-        self,
-        client: TestClient,
-        db_unhealthy,
-        openai_initialized,
-        supabase_initialized,
-    ):
     def test_legacy_health_returns_503_when_not_ready(
         self,
         client: TestClient,
@@ -525,9 +334,7 @@ class TestHealthBackwardCompat:
         response = client.get("/health")
 
         assert response.status_code == 503
-        assert response.status_code == 503
         data = response.json()
-        assert data["status"] == "not_ready"
         assert data["status"] == "not_ready"
 
 
