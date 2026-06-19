@@ -27,10 +27,12 @@ class PromptGuardService:
         model_name: str,
         base_path: str,
         threshold: float = 0.5,
+        fail_open: bool = False,
     ):
         self._model_name = model_name
         self._threshold = threshold
         self._base_path = base_path
+        self._fail_open = fail_open
 
         self._model = None
         self._tokenizer = None
@@ -95,6 +97,8 @@ class PromptGuardService:
             return await asyncio.to_thread(self._run_inference, text)
         except Exception:
             logger.exception(
-                "ONNX Guard encountered an error during math calculations; failing open."
+                "ONNX Guard encountered an error; fail_open=%s", self._fail_open
             )
-            return True
+            if self._fail_open:
+                return True
+            return False

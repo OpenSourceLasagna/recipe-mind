@@ -15,7 +15,6 @@ RECIPE_SCALAR_FIELDS = (
     "title",
     "additional_information",
     "instruction_steps",
-    "nutrition",
     "servings",
     "duration_minutes",
     "difficulty",
@@ -70,6 +69,9 @@ class RecipeIngestionService:
             raise HTTPException(status_code=404, detail="Recipe not found")
         if recipe.user_id != user_id:
             raise HTTPException(status_code=403, detail="Not authorized")
+
+        if payload.nutrition is not None:
+            recipe.nutrition = payload.nutrition.model_dump(exclude_none=True)
 
         for field in RECIPE_SCALAR_FIELDS:
             val = getattr(payload, field, None)

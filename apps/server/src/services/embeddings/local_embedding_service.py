@@ -13,7 +13,9 @@ class LocalEmbeddingService(BaseEmbeddingService):
             model_name=model_name,
         )
 
-        self.embedding_model = SentenceTransformer(str(saved_path), device="cpu")
+        self.embedding_model = SentenceTransformer(
+            str(saved_path), device="cpu", trust_remote_code=True
+        )
 
     async def embed(self, value: str) -> list[float]:
         embedding = await asyncio.to_thread(

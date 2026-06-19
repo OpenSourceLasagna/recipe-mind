@@ -6,16 +6,26 @@ logger = logging.getLogger(__name__)
 
 
 class ModerationService:
-    def __init__(self, client: AsyncOpenAI, threshold: float):
+    def __init__(
+        self,
+        client: AsyncOpenAI,
+        threshold: float,
+        fail_open: bool = False,
+    ):
         self._client = client
         self._threshold = threshold
+        self._fail_open = fail_open
 
     async def is_safe(self, text: str) -> bool:
         try:
             response = await self._client.moderations.create(input=text)
         except Exception:
-            logger.exception("OpenAI moderation call failed; failing open")
-            return True
+            logger.exception(
+                "OpenAI moderation call failed; fail_open=%s", self._fail_open
+            )
+            if self._fail_open:
+                return True
+            return False
 
         for result in response.results:
             if result.flagged:
