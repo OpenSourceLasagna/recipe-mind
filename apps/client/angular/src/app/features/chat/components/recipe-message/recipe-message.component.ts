@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   heroChevronDown,
@@ -7,6 +15,7 @@ import {
   heroPencil,
   heroSparkles,
   heroXMark,
+  heroDocumentDuplicate,
 } from '@ng-icons/heroicons/outline';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmBadge } from '@spartan-ng/helm/badge';
@@ -14,6 +23,7 @@ import { TitleCasePipe } from '@angular/common';
 import { RecipeDetailViewComponent } from '../../../dashboard/components/recipe-detail-view/recipe-detail-view.component';
 import { RecipeContext } from '../../models/chat-message.model';
 import { RecipePatchRequest } from '../../../dashboard/models/recipe-edit.model';
+import { RecipeResponse } from '../../../dashboard/models/recipe.model';
 
 @Component({
   selector: 'app-recipe-message',
@@ -27,12 +37,12 @@ import { RecipePatchRequest } from '../../../dashboard/models/recipe-edit.model'
       heroPencil,
       heroSparkles,
       heroXMark,
+      heroDocumentDuplicate,
     }),
   ],
   styleUrl: './recipe-message.component.css',
   template: `
     <div class="rounded-lg border border-border bg-card overflow-hidden max-w-full">
-      <!-- Header -->
       <div
         class="flex items-center justify-between gap-2 px-3 py-2 bg-muted/50 border-b border-border cursor-pointer"
         (click)="onActivateClick($event)"
@@ -55,17 +65,6 @@ import { RecipePatchRequest } from '../../../dashboard/models/recipe-edit.model'
           </span>
         </div>
         <div class="flex items-center gap-1 shrink-0">
-          <button
-            hlmBtn
-            variant="ghost"
-            size="icon"
-            type="button"
-            aria-label="Save recipe"
-            class="size-7 text-muted-foreground md:hover:text-primary"
-            (click)="onSaveClick($event)"
-          >
-            <ng-icon hlm name="heroSparkles" class="size-4" />
-          </button>
           <button
             hlmBtn
             variant="ghost"
@@ -95,23 +94,24 @@ import { RecipePatchRequest } from '../../../dashboard/models/recipe-edit.model'
         </div>
       </div>
 
-      <!-- Content -->
       @if (isExpanded()) {
         <div class="recipe-detail-wrapper p-3">
           <app-recipe-detail-view
+            data-testid="chat-recipe-detail"
             class="recipe-detail-view-container"
             [recipe]="recipeContext().originalRecipe"
             [modifiedRecipe]="recipeContext().modifiedRecipe ?? null"
             [isOwner]="true"
             [isEditing]="recipeContext().isEditing"
+            [variant]="'inline'"
             [(viewMode)]="viewMode"
+            [autoSwitchToChanges]="recipeContext().startInModifiedMode ?? false"
             (editClick)="editClick.emit()"
             (saveClick)="saveEditClick.emit($event)"
             (cancelEditClick)="cancelEditClick.emit()"
           />
         </div>
       } @else {
-        <!-- Collapsed preview -->
         <div
           class="px-3 py-2 text-sm text-muted-foreground cursor-pointer"
           (click)="onActivateClick($event)"
@@ -124,6 +124,30 @@ import { RecipePatchRequest } from '../../../dashboard/models/recipe-edit.model'
           @if (recipeContext().originalRecipe.spiceLevel > 0) {
             · 🌶️ {{ recipeContext().originalRecipe.spiceLevel }}
           }
+        </div>
+      }
+
+      @if (isExpanded() && isShowingChanges()) {
+        <div class="flex items-center justify-end gap-2 px-3 py-2 border-t border-border bg-muted/20">
+          <button
+            hlmBtn
+            variant="ghost"
+            size="sm"
+            type="button"
+            (click)="onDismissChanges($event)"
+          >
+            Dismiss Changes
+          </button>
+          <button
+            hlmBtn
+            variant="default"
+            size="sm"
+            type="button"
+            (click)="onSaveAsCopy($event)"
+          >
+            <ng-icon hlm name="heroDocumentDuplicate" class="size-3.5 mr-1" />
+            Save as Copy
+          </button>
         </div>
       }
     </div>
@@ -140,11 +164,31 @@ export class RecipeMessageComponent {
   readonly saveEditClick = output<RecipePatchRequest>();
   readonly cancelEditClick = output<void>();
   readonly activateClick = output<void>();
+  readonly saveAsCopyClick = output<RecipeResponse>();
+  readonly dismissChangesClick = output<void>();
 
   readonly isExpanded = signal(true);
   readonly viewMode = signal<'original' | 'modified'>('original');
 
   readonly hasModified = computed(() => !!this.recipeContext().modifiedRecipe);
+
+  readonly isShowingChanges = computed(
+    () => this.viewMode() === 'modified' && this.hasModified(),
+  );
+
+  constructor() {
+    effect(() => {
+      if (this.recipeContext().startInModifiedMode && this.hasModified()) {
+        this.viewMode.set('modified');
+      }
+    });
+
+    effect(() => {
+      if (!this.recipeContext().isActive && this.isExpanded()) {
+        this.isExpanded.set(false);
+      }
+    });
+  }
 
   onToggleExpand(event: Event): void {
     event.stopPropagation();
@@ -167,8 +211,17 @@ export class RecipeMessageComponent {
     this.activateClick.emit();
   }
 
-  onSaveClick(event: Event): void {
+  onSaveAsCopy(event: Event): void {
     event.stopPropagation();
-    this.saveClick.emit();
+    const modified = this.recipeContext().modifiedRecipe;
+    if (modified) {
+      this.saveAsCopyClick.emit(modified);
+    }
+  }
+
+  onDismissChanges(event: Event): void {
+    event.stopPropagation();
+    this.dismissChangesClick.emit();
+    this.viewMode.set('original');
   }
 }

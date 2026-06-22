@@ -6,6 +6,7 @@ import {
   ElementRef,
   inject,
   model,
+  signal,
   Signal,
   untracked,
   viewChild,
@@ -22,6 +23,7 @@ import { PanelChatMessage } from '../../models/chat-message.model';
 import { ContextRecipeCardComponent } from '../context-recipe-card/context-recipe-card.component';
 import { RecipeResponse } from '../../../dashboard/models/recipe.model';
 import { RecipeDetailService } from '../../../dashboard/services/recipe-detail.service';
+import { RecipeFilterService } from '../../../dashboard/services/recipe-filter.service';
 import { RecipePatchRequest } from '../../../dashboard/models/recipe-edit.model';
 
 @Component({
@@ -43,6 +45,9 @@ export class ChatPanelComponent {
   readonly store = inject(ChatStore);
   readonly #service = inject(ChatService);
   readonly #detailService = inject(RecipeDetailService);
+  readonly #filterService = inject(RecipeFilterService);
+
+  readonly showCloseConfirm = signal(false);
 
   readonly inputValue = model('');
 
@@ -97,6 +102,48 @@ export class ChatPanelComponent {
         untracked(() => this.scrollToMessage(focusedId));
       }
     });
+
+    effect(() => {
+      const count = this.store.draftNotificationCount();
+      if (count === 0 || this.#filterService.isDesktop()) return;
+
+      const drafts = this.store.aiDrafts();
+      const draftEntries = Object.entries(drafts);
+      if (draftEntries.length === 0) return;
+
+      untracked(() => {
+        for (const [recipeId, draftData] of draftEntries) {
+          const existingMessageId = this.store.findRecipeMessageId(recipeId);
+
+          if (existingMessageId !== null) {
+            this.store.updateRecipeMessageDraft(
+              recipeId,
+              draftData.draft,
+              draftData.changedFields,
+            );
+            this.store.moveRecipeMessageToBottom(existingMessageId);
+            this.store.focusRecipeMessage(existingMessageId);
+          } else {
+            const contextRecipe = untracked(() => this.#detailService.recipe.value());
+            if (contextRecipe && contextRecipe.id === recipeId) {
+              this.store.expandRecipe(
+                contextRecipe as unknown as RecipeResponse,
+                draftData.draft,
+                draftData.changedFields,
+                true,
+              );
+              const newMessageId = this.store.findRecipeMessageId(recipeId);
+              if (newMessageId !== null) {
+                this.store.focusRecipeMessage(newMessageId);
+              }
+            }
+          }
+
+          this.store.clearAiDraft(recipeId);
+          this.store.acknowledgeDraftProcessed();
+        }
+      });
+    });
   }
 
   send(event: Event): void {
@@ -110,12 +157,19 @@ export class ChatPanelComponent {
 
   close(): void {
     if (this.store.hasUnsavedRecipeChanges()) {
-      const confirmed = confirm(
-        'You have unsaved recipe changes. Are you sure you want to close the chat?',
-      );
-      if (!confirmed) return;
+      this.showCloseConfirm.set(true);
+      return;
     }
     this.store.close();
+  }
+
+  confirmClose(): void {
+    this.showCloseConfirm.set(false);
+    this.store.close();
+  }
+
+  cancelClose(): void {
+    this.showCloseConfirm.set(false);
   }
 
   toggleContextExcluded(): void {
@@ -176,12 +230,14 @@ export class ChatPanelComponent {
     this.store.setRecipeEditing(messageId, true);
   }
 
-  onSaveClick(_messageId: number): void {
-    // TODO: Implement save as new recipe functionality
+  onSaveAsCopyClick(event: { messageId: number; modifiedRecipe: RecipeResponse }): void {
+  }
+
+  onDismissChangesClick(messageId: number): void {
+    this.store.dismissRecipeChanges(messageId);
   }
 
   onSaveEditClick(event: { messageId: number; patch: RecipePatchRequest }): void {
-    // TODO: Implement save edit functionality
     this.store.setRecipeEditing(event.messageId, false);
   }
 

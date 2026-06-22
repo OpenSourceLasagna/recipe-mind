@@ -20,13 +20,10 @@ export type CreationMethod = 'link' | 'text' | 'image' | 'editor';
 export class RecipeCreationStore {
   readonly #recipeService = inject(RecipeService);
 
-  // ── Mode selection ──
   readonly activeMethod = signal<CreationMethod>('link');
 
-  // ── URL mode state ──
   readonly urlInput = signal('');
 
-  // ── Free-text mode state ──
   readonly rawTextInput = signal('');
 
   // ── Extraction state ──
@@ -58,8 +55,6 @@ export class RecipeCreationStore {
 
   /** True when the editor form and ingredients are both valid. */
   readonly editorReady = computed(() => this.editorForm().valid() && this.ingredientsValid().valid);
-
-  // ── Actions ──
 
   setActiveMethod(method: CreationMethod): void {
     this.activeMethod.set(method);

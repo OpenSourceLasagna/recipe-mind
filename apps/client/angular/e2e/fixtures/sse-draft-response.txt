@@ -1,0 +1,38 @@
+event: status
+data: {"status":"thinking"}
+
+event: status
+data: {"status":"generating"}
+
+event: text_delta
+data: {"delta":"Sure"}
+
+event: text_delta
+data: {"delta":"!"}
+
+event: text_delta
+data: {"delta":" I'v"}
+
+event: text_delta
+data: {"delta":"e modified"}
+
+event: text_delta
+data: {"delta":" the"}
+
+event: text_delta
+data: {"delta":" recipe"}
+
+event: text_delta
+data: {"delta":" for"}
+
+event: text_delta
+data: {"delta":" you"}
+
+event: text_delta
+data: {"delta":"."}
+
+event: text
+data: {"text":"Sure! I've modified the recipe for you."}
+
+event: recipe_draft
+data: {"draft":{"id":"a1b2c3d4-e5f6-7890-abcd-ef1234567890","title":"Lighter Pasta Carbonara","additionalInformation":["Contains eggs","Contains dairy","Lower fat version"],"instructionSteps":["Boil water and cook pasta until al dente","Fry pancetta until crispy","Mix eggs with parmesan cheese","Combine pasta with pancetta and egg mixture","Serve immediately with fresh parsley"],"nutrition":{"calories":380,"protein":"24g","carbs":"48g","fat":"12g"},"servings":6,"durationMinutes":25,"difficulty":"easy","spiceLevel":2,"origin":"Italian","isPublic":true,"ingredients":[{"id":"ing-1","ingredientName":"Spaghetti","quantity":400,"unit":"g","categoryId":null},{"id":"ing-2","ingredientName":"Turkey Bacon","quantity":120,"unit":"g","categoryId":null},{"id":"ing-3","ingredientName":"Egg Whites","quantity":6,"unit":"pieces","categoryId":null},{"id":"ing-4","ingredientName":"Parmesan","quantity":80,"unit":"g","categoryId":null},{"ingredientName":"Fresh Parsley","quantity":2,"unit":"tbsp"}],"createdAt":"2024-01-01T00:00:00Z","updatedAt":"2024-01-01T00:00:00Z"},"changed_fields":["title","servings","durationMinutes","difficulty","spiceLevel","ingredients","instructionSteps","nutrition","additionalInformation"]}

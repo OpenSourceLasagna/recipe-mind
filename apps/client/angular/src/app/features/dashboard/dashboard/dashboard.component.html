@@ -1,5 +1,4 @@
 <div class="lg:flex lg:h-[calc(100dvh-4.5rem)]">
-  <!-- Main content -->
   <div class="flex-1 min-w-0 p-4 lg:overflow-y-auto">
     <div class="flex items-center justify-between mb-3">
       <h1 class="text-xl font-semibold">Explore Recipes</h1>
@@ -79,7 +78,6 @@
     }
   </div>
 
-  <!-- Desktop chat sidebar -->
   @if (chat.isOpen()) {
     <div
       class="hidden lg:block relative w-96 border-l border-border bg-background -mt-4 right-0 bottom-0"
@@ -89,7 +87,6 @@
   }
 </div>
 
-<!-- Mobile chat overlay -->
 @if (chat.isOpen()) {
   <div class="lg:hidden fixed inset-x-0 top-0 bottom-16 md:bottom-0 z-40 bg-background">
     <app-chat-panel class="h-full" />

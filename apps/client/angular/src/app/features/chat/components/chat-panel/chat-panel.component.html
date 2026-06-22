@@ -44,8 +44,9 @@
         (collapseClick)="onCollapseClick($event)"
         (closeClick)="onCloseClick($event)"
         (editClick)="onEditClick($event)"
-        (saveClick)="onSaveClick($event)"
         (saveEditClick)="onSaveEditClick($event)"
+        (saveAsCopyClick)="onSaveAsCopyClick($event)"
+        (dismissChangesClick)="onDismissChangesClick($event)"
         (cancelEditClick)="onCancelEditClick($event)"
         (activateClick)="onActivateClick($event)"
         (highlightEnd)="onHighlightEnd()"
@@ -76,6 +77,22 @@
       }
     }
   </div>
+
+  @if (showCloseConfirm()) {
+    <div class="border-t border-border bg-muted/30 px-4 py-3">
+      <p class="text-sm text-muted-foreground mb-2">
+        You have unsaved recipe changes. Discard them and close?
+      </p>
+      <div class="flex justify-end gap-2">
+        <button hlmBtn variant="ghost" size="sm" (click)="cancelClose()">
+          Keep Editing
+        </button>
+        <button hlmBtn variant="default" size="sm" (click)="confirmClose()">
+          Discard &amp; Close
+        </button>
+      </div>
+    </div>
+  }
 
   <div class="border-t border-border px-4 py-3">
     <form class="flex items-end gap-2" (submit)="send($event)">

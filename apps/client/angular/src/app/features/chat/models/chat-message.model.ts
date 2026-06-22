@@ -1,4 +1,4 @@
-import { Recipe, RecipeResponse } from '../../dashboard/models/recipe.model';
+import { RecipeResponse } from '../../dashboard/models/recipe.model';
 
 export type ChatRole = 'user' | 'assistant' | 'recipe';
 
@@ -8,19 +8,16 @@ export interface RecipeContext {
   changedFields?: string[];
   isActive: boolean;
   isEditing: boolean;
+  startInModifiedMode?: boolean;
 }
 
 export interface MessageAdditionalContent {
-  recipeList?: Recipe[];
-  recipeDraft?: Recipe;
+  recipeList?: RecipeResponse[];
+  recipeDraft?: RecipeResponse;
   changedFields?: string[];
 }
 
-export interface PendingMessageAdditionalContent {
-  recipeList?: unknown[];
-  recipeDraft?: unknown;
-  changedFields?: string[];
-}
+export type PendingMessageAdditionalContent = MessageAdditionalContent;
 
 export interface ChatMessage {
   readonly id: number;

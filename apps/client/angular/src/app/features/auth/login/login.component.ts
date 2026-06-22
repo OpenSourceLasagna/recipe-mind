@@ -85,6 +85,5 @@ export class LoginComponent {
   }
 
   onForgotPassword() {
-    // TODO: route to password recovery flow when available.
   }
 }

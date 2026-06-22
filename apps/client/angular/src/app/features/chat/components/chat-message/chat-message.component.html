@@ -17,8 +17,9 @@
       (collapseClick)="collapseClick.emit(message().id)"
       (closeClick)="closeClick.emit(message().id)"
       (editClick)="editClick.emit(message().id)"
-      (saveClick)="saveClick.emit(message().id)"
       (saveEditClick)="saveEditClick.emit({ messageId: message().id, patch: $event })"
+      (saveAsCopyClick)="saveAsCopyClick.emit({ messageId: message().id, modifiedRecipe: $event })"
+      (dismissChangesClick)="dismissChangesClick.emit(message().id)"
       (cancelEditClick)="cancelEditClick.emit(message().id)"
       (activateClick)="activateClick.emit(message().id)"
     />
@@ -29,7 +30,7 @@
         @if (!isPending()) {
           @if (message().additionalContent; as extra) {
             @if (!isDesktopResultsMode()) {
-              @if (extra.recipeList ? $any(extra.recipeList) : null; as recipes) {
+              @if (extra.recipeList; as recipes) {
                 @for (recipe of recipes; track recipe.id) {
                   <div class="recipe-card">
                     <h4>{{ recipe.title }}</h4>
@@ -47,13 +48,31 @@
                 </p>
               }
             }
-            @if (extra.recipeDraft ? $any(extra.recipeDraft) : null; as draft) {
-              <app-recipe-detail-view [recipe]="draft" />
+            @if (extra.recipeDraft; as draft) {
+              @if (isDesktop() && isActiveRecipeDraft()) {
+                <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30 border border-border text-sm not-prose mt-2">
+                  <ng-icon hlm name="heroSparkles" class="size-4 text-primary shrink-0" />
+                  <span class="text-foreground">
+                    Recipe updated &mdash; {{ draftChangedCount() }} {{ draftChangedCount() === 1 ? 'change' : 'changes' }} applied
+                  </span>
+                </div>
+              } @else {
+                <div class="rounded-lg border border-border bg-card p-3 not-prose mt-2">
+                  <div class="flex items-center gap-2 mb-2">
+                    <ng-icon hlm name="heroSparkles" class="size-4 text-primary shrink-0" />
+                    <span class="text-sm font-medium truncate">{{ draft.title }}</span>
+                    <span class="text-xs text-muted-foreground shrink-0">{{ draftChangedCount() }} {{ draftChangedCount() === 1 ? 'change' : 'changes' }}</span>
+                  </div>
+                  <button hlmBtn variant="outline" size="sm" class="w-full" (click)="handleRecipeCardClick(draft.id)">
+                    View Changes
+                  </button>
+                </div>
+              }
             }
           }
         } @else {
           @if (message().additionalContent; as preview) {
-            @if (preview.recipeList ? $any(preview.recipeList) : null; as recipes) {
+            @if (preview.recipeList; as recipes) {
               <p class="text-sm text-muted-foreground not-prose">
                 Found {{ recipes.length }} recipe{{ recipes.length === 1 ? '' : 's' }}
               </p>

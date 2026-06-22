@@ -1,17 +1,18 @@
 <div class="max-w-3xl mx-auto px-4 py-6 space-y-8">
-  <!-- ── Header bar ── -->
-  <div class="flex items-center justify-between">
-    <button
-      hlmBtn
-      variant="ghost"
-      size="sm"
-      type="button"
-      class="gap-1.5"
-      (click)="backClick.emit()"
-    >
-      <ng-icon hlm name="heroArrowLeft" />
-      <span class="hidden sm:inline">Back</span>
-    </button>
+  <div class="flex items-center" [class.justify-between]="variant() === 'page'" [class.justify-end]="variant() === 'inline'">
+    @if (variant() === 'page') {
+      <button
+        hlmBtn
+        variant="ghost"
+        size="sm"
+        type="button"
+        class="gap-1.5"
+        (click)="backClick.emit()"
+      >
+        <ng-icon hlm name="heroArrowLeft" />
+        <span class="hidden sm:inline">Back</span>
+      </button>
+    }
 
     <div class="flex items-center gap-2">
       @if (isOwner() && !isEditing()) {
@@ -40,7 +41,6 @@
     </div>
   </div>
 
-  <!-- ── Title section ── -->
   <div class="space-y-3">
     @if (!isEditing()) {
       <div class="flex flex-wrap items-center gap-2">
@@ -52,6 +52,12 @@
 
       <h1 class="text-3xl font-bold tracking-tight">
         {{ activeRecipe().title }}
+        @if (viewMode() === 'modified' && recipeDiff()?.title; as titleChange) {
+          <span class="inline-flex items-center gap-1 ml-2 text-base font-normal text-muted-foreground">
+            <span class="text-muted-foreground/50">→</span>
+            <span class="text-emerald-600">{{ titleChange.after }}</span>
+          </span>
+        }
       </h1>
     } @else {
       <hlm-field>
@@ -63,8 +69,8 @@
       </hlm-field>
     }
 
-    <!-- Version toggle (only when a modified variant exists) -->
-    @if (hasModified() && !isEditing()) {
+    <!-- Version toggle (only when actual changes exist) -->
+    @if (showVersionToggle() && !isEditing()) {
       <div class="inline-flex rounded-lg bg-muted p-1" role="group" aria-label="Recipe version">
         <button
           type="button"
@@ -86,16 +92,18 @@
           [class.text-muted-foreground]="viewMode() !== 'modified'"
           (click)="setViewMode('modified')"
         >
-          Modified
-          @if (changedFields().size > 0) {
-            <span class="inline-block size-1.5 rounded-full bg-primary" aria-hidden="true"></span>
-          }
+          Changes
+          <span
+            class="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-primary text-[10px] font-semibold text-primary-foreground px-1"
+            aria-hidden="true"
+          >
+            {{ changedFields().size }}
+          </span>
         </button>
       </div>
     }
   </div>
 
-  <!-- ── Meta bar ── -->
   @if (!isEditing()) {
     <app-recipe-meta-bar
       [difficulty]="activeRecipe().difficulty"
@@ -103,14 +111,37 @@
       [servings]="activeRecipe().servings"
       [spiceLevel]="activeRecipe().spiceLevel"
       [showDifficulty]="false"
-      [class.border-l-2]="metaChanged() && viewMode() === 'modified'"
-      [class.border-primary]="metaChanged() && viewMode() === 'modified'"
-      [class.bg-primary]="metaChanged() && viewMode() === 'modified'"
-      [class.rounded-r-md]="metaChanged() && viewMode() === 'modified'"
-      [class.pl-3]="metaChanged() && viewMode() === 'modified'"
-      [class.py-1]="metaChanged() && viewMode() === 'modified'"
-      [class.bg-opacity-5]="metaChanged() && viewMode() === 'modified'"
+      [class.section-changed]="metaChanged() && viewMode() === 'modified'"
     />
+    @if (viewMode() === 'modified' && recipeDiff(); as diff) {
+      <div class="flex flex-wrap gap-2 mt-2">
+        @if (diff.servings; as s) {
+          <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800">
+            Servings: {{ s.before }} → {{ s.after }}
+          </span>
+        }
+        @if (diff.durationMinutes; as d) {
+          <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800">
+            Duration: {{ d.before }} min → {{ d.after }} min
+          </span>
+        }
+        @if (diff.difficulty; as d) {
+          <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800">
+            Difficulty: {{ d.before }} → {{ d.after }}
+          </span>
+        }
+        @if (diff.spiceLevel; as s) {
+          <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800">
+            Spice: {{ s.before }} → {{ s.after }}
+          </span>
+        }
+        @if (diff.origin; as o) {
+          <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800">
+            Origin: {{ o.before }} → {{ o.after }}
+          </span>
+        }
+      </div>
+    }
   } @else {
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <hlm-field>
@@ -131,7 +162,7 @@
             max="5"
             step="1"
             [value]="editForm.spiceLevel().value()"
-            (input)="editForm.spiceLevel().value.set(+$any($event.target).value)"
+            (input)="onSpiceLevelInput($event)"
           />
           <span class="text-sm font-medium w-4 text-center">
             {{ editForm.spiceLevel().value() }}
@@ -168,16 +199,9 @@
 
   <hlm-separator />
 
-  <!-- ── Ingredients ── -->
   <section
     class="space-y-3"
-    [class.border-l-2]="ingredientsChanged() && viewMode() === 'modified'"
-    [class.border-primary]="ingredientsChanged() && viewMode() === 'modified'"
-    [class.bg-primary]="ingredientsChanged() && viewMode() === 'modified'"
-    [class.rounded-r-md]="ingredientsChanged() && viewMode() === 'modified'"
-    [class.pl-3]="ingredientsChanged() && viewMode() === 'modified'"
-    [class.py-1]="ingredientsChanged() && viewMode() === 'modified'"
-    [class.bg-opacity-5]="ingredientsChanged() && viewMode() === 'modified'"
+    [class.section-changed]="ingredientsChanged() && viewMode() === 'modified'"
   >
     <div class="flex items-center gap-2">
       <h2 class="text-lg font-semibold">Ingredients</h2>
@@ -188,11 +212,42 @@
 
     @if (!isEditing()) {
       <ul class="space-y-2">
-        @for (item of activeRecipe().ingredients; track item.id) {
-          <li class="flex items-baseline gap-3 text-sm">
-            <span class="font-semibold tabular-nums w-12 text-right">{{ item.quantity }}</span>
-            <span class="text-muted-foreground w-16">{{ item.unit }}</span>
-            <span class="text-foreground">{{ item.ingredientName }}</span>
+        @for (item of displayIngredients(); track item.original?.id ?? item.modified?.id ?? $index) {
+          <li
+            class="flex items-baseline gap-3 text-sm rounded-r-md pr-2"
+            [class.bg-emerald-50]="item.status === 'added'"
+            [class.border-l-2]="item.status === 'added'"
+            [class.border-emerald-400]="item.status === 'added'"
+            [class.pl-2]="item.status === 'added'"
+            [class.opacity-40]="item.status === 'removed'"
+            [class.line-through]="item.status === 'removed'"
+          >
+            <span class="font-semibold tabular-nums w-12 text-right">
+              @if (item.status === 'modified') {
+                <span class="text-muted-foreground line-through text-xs mr-1">{{ item.original?.quantity }}</span>
+              }
+              {{ (item.status === 'removed' ? item.original : item.modified)?.quantity ?? '' }}
+            </span>
+            <span class="text-muted-foreground w-16">
+              @if (item.status === 'modified' && item.original?.unit !== item.modified?.unit) {
+                <span class="line-through text-xs">{{ item.original?.unit }}</span>
+                <span class="mx-0.5">→</span>
+              }
+              {{ (item.status === 'removed' ? item.original : item.modified)?.unit ?? '' }}
+            </span>
+            <span class="text-foreground">
+              @if (item.status === 'modified' && item.original?.ingredientName !== item.modified?.ingredientName) {
+                <span class="text-muted-foreground line-through mr-1">{{ item.original?.ingredientName }}</span>
+                <span class="text-muted-foreground/50 mx-0.5">→</span>
+              }
+              {{ (item.status === 'removed' ? item.original : item.modified)?.ingredientName ?? '' }}
+            </span>
+            @if (item.status === 'added') {
+              <span class="text-xs text-emerald-600 font-medium ml-auto">added</span>
+            }
+            @if (item.status === 'removed') {
+              <span class="text-xs text-muted-foreground ml-auto">removed</span>
+            }
           </li>
         }
       </ul>
@@ -208,16 +263,9 @@
 
   <hlm-separator />
 
-  <!-- ── Instructions ── -->
   <section
     class="space-y-3"
-    [class.border-l-2]="instructionsChanged() && viewMode() === 'modified'"
-    [class.border-primary]="instructionsChanged() && viewMode() === 'modified'"
-    [class.bg-primary]="instructionsChanged() && viewMode() === 'modified'"
-    [class.rounded-r-md]="instructionsChanged() && viewMode() === 'modified'"
-    [class.pl-3]="instructionsChanged() && viewMode() === 'modified'"
-    [class.py-1]="instructionsChanged() && viewMode() === 'modified'"
-    [class.bg-opacity-5]="instructionsChanged() && viewMode() === 'modified'"
+    [class.section-changed]="instructionsChanged() && viewMode() === 'modified'"
   >
     <div class="flex items-center gap-2">
       <h2 class="text-lg font-semibold">Instructions</h2>
@@ -228,14 +276,37 @@
 
     @if (!isEditing()) {
       <ol class="space-y-4">
-        @for (step of activeRecipe().instructionSteps; track $index) {
-          <li class="flex gap-3 text-sm">
+        @for (step of displayInstructions(); track $index) {
+          <li
+            class="flex gap-3 text-sm rounded-r-md pr-2"
+            [class.bg-emerald-50]="step.status === 'added'"
+            [class.border-l-2]="step.status === 'added'"
+            [class.border-emerald-400]="step.status === 'added'"
+            [class.pl-2]="step.status === 'added'"
+            [class.opacity-40]="step.status === 'removed'"
+          >
             <span
               class="flex-none flex items-center justify-center size-7 rounded-full bg-muted text-xs font-semibold text-muted-foreground"
             >
-              {{ $index + 1 }}
+              {{ step.index + 1 }}
             </span>
-            <span class="text-foreground leading-relaxed">{{ step }}</span>
+            <span class="text-foreground leading-relaxed">
+              @if (step.status === 'removed') {
+                <span class="line-through">{{ step.original }}</span>
+              } @else if (step.status === 'modified') {
+                <span class="text-muted-foreground line-through mr-2">{{ step.original }}</span>
+                <span class="text-muted-foreground/50 mr-2">→</span>
+                <span>{{ step.modified }}</span>
+              } @else {
+                {{ step.modified ?? step.original }}
+              }
+            </span>
+            @if (step.status === 'added') {
+              <span class="text-xs text-emerald-600 font-medium ml-auto shrink-0">added</span>
+            }
+            @if (step.status === 'removed') {
+              <span class="text-xs text-muted-foreground ml-auto shrink-0">removed</span>
+            }
           </li>
         }
       </ol>
@@ -253,7 +324,7 @@
               class="flex-1 min-h-[60px]"
               placeholder="Step {{ $index + 1 }}"
               [value]="step"
-              (input)="updateInstruction($index, $any($event.target).value)"
+              (input)="onInstructionInput($index, $event)"
             ></textarea>
             <button
               hlmBtn
@@ -284,7 +355,6 @@
 
   <hlm-separator />
 
-  <!-- ── Nutrition (collapsible) ── -->
   @if (hasNutrition()) {
     <hlm-collapsible class="space-y-2">
       <div class="flex items-center gap-2">
@@ -300,20 +370,31 @@
       <hlm-collapsible-content>
         <div
           class="grid grid-cols-2 sm:grid-cols-3 gap-3"
-          [class.border-l-2]="nutritionChanged() && viewMode() === 'modified'"
-          [class.border-primary]="nutritionChanged() && viewMode() === 'modified'"
-          [class.bg-primary]="nutritionChanged() && viewMode() === 'modified'"
-          [class.rounded-r-md]="nutritionChanged() && viewMode() === 'modified'"
-          [class.pl-3]="nutritionChanged() && viewMode() === 'modified'"
-          [class.py-1]="nutritionChanged() && viewMode() === 'modified'"
-          [class.bg-opacity-5]="nutritionChanged() && viewMode() === 'modified'"
+          [class.section-changed]="nutritionChanged() && viewMode() === 'modified'"
         >
           @for (entry of nutritionEntries(); track entry.key) {
-            <div class="rounded-lg border p-3">
+            <div
+              class="rounded-lg border p-3"
+              [class.bg-emerald-50]="entry.status === 'added'"
+              [class.border-emerald-200]="entry.status === 'added'"
+              [class.opacity-40]="entry.status === 'removed'"
+            >
               <div class="text-xs text-muted-foreground uppercase tracking-wider">
                 {{ entry.key }}
+                @if (entry.status === 'added') {
+                  <span class="text-emerald-600 ml-1">new</span>
+                }
+                @if (entry.status === 'removed') {
+                  <span class="text-muted-foreground ml-1">removed</span>
+                }
               </div>
-              <div class="text-lg font-semibold">{{ entry.value }}</div>
+              <div class="text-lg font-semibold">
+                @if (entry.status === 'modified') {
+                  <span class="text-muted-foreground line-through text-sm mr-1">{{ entry.original }}</span>
+                  <span class="text-muted-foreground/50 text-sm mr-1">→</span>
+                }
+                {{ entry.value }}
+              </div>
             </div>
           }
         </div>
@@ -323,17 +404,10 @@
     <hlm-separator />
   }
 
-  <!-- ── Additional Information ── -->
   @if (hasAdditionalInfo()) {
     <section
       class="space-y-3"
-      [class.border-l-2]="additionalInfoChanged() && viewMode() === 'modified'"
-      [class.border-primary]="additionalInfoChanged() && viewMode() === 'modified'"
-      [class.bg-primary]="additionalInfoChanged() && viewMode() === 'modified'"
-      [class.rounded-r-md]="additionalInfoChanged() && viewMode() === 'modified'"
-      [class.pl-3]="additionalInfoChanged() && viewMode() === 'modified'"
-      [class.py-1]="additionalInfoChanged() && viewMode() === 'modified'"
-      [class.bg-opacity-5]="additionalInfoChanged() && viewMode() === 'modified'"
+      [class.section-changed]="additionalInfoChanged() && viewMode() === 'modified'"
     >
       <div class="flex items-center gap-2">
         <h2 class="text-lg font-semibold">Additional Information</h2>
@@ -344,8 +418,25 @@
 
       @if (!isEditing()) {
         <ul class="list-disc list-inside space-y-1 text-sm text-foreground">
-          @for (item of activeRecipe().additionalInformation; track $index) {
-            <li>{{ item }}</li>
+          @for (item of displayAdditionalInfo(); track $index) {
+            <li
+              [class.text-emerald-700]="item.status === 'added'"
+              [class.opacity-40]="item.status === 'removed'"
+              [class.line-through]="item.status === 'removed'"
+            >
+              @if (item.status === 'removed') {
+                {{ item.original }}
+              } @else if (item.status === 'modified') {
+                <span class="text-muted-foreground line-through mr-2">{{ item.original }}</span>
+                <span class="text-muted-foreground/50 mr-2">→</span>
+                <span>{{ item.modified }}</span>
+              } @else {
+                {{ item.modified ?? item.original }}
+              }
+              @if (item.status === 'added') {
+                <span class="text-xs text-emerald-600 font-medium ml-1">new</span>
+              }
+            </li>
           }
         </ul>
       } @else {
@@ -357,7 +448,7 @@
                 class="flex-1 min-h-[40px]"
                 placeholder="Additional note"
                 [value]="item"
-                (input)="updateAdditionalInfo($index, $any($event.target).value)"
+                (input)="onAdditionalInfoInput($index, $event)"
               ></textarea>
               <button
                 hlmBtn
@@ -387,15 +478,26 @@
     </section>
   }
 
-  <!-- ── Edit actions ── -->
   @if (isEditing()) {
     <div class="flex items-center justify-end gap-3 pt-4">
       <button hlmBtn variant="outline" type="button" (click)="cancelEditClick.emit()">
         Cancel
       </button>
-      <button hlmBtn type="button" (click)="onSave()">
+      <button hlmBtn type="button" (click)="onSave()" [disabled]="!editForm().valid()">
         <ng-icon hlm name="heroCheck" class="mr-1.5" />
         Save Changes
+      </button>
+    </div>
+  }
+
+  @if (variant() === 'page' && viewMode() === 'modified' && hasModified() && !isEditing()) {
+    <div class="flex items-center justify-end gap-2 pt-4 border-t border-border">
+      <button hlmBtn variant="ghost" size="sm" type="button" (click)="onDismissChanges()">
+        Dismiss Changes
+      </button>
+      <button hlmBtn variant="default" size="sm" type="button" (click)="onSaveAsCopy()">
+        <ng-icon hlm name="heroDocumentDuplicate" class="size-3.5 mr-1" />
+        Save as Copy
       </button>
     </div>
   }

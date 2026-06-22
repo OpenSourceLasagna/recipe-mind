@@ -8,6 +8,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
 import { RecipeListService } from '../services/recipe-list.service';
 import { RecipeFilterService } from '../services/recipe-filter.service';
+import { RecipeDetailService } from '../services/recipe-detail.service';
 import { RecipeCardComponent } from '../components/recipe-card/recipe-card.component';
 import { RecipeFilterSheetComponent } from '../components/filter-sheet/filter-sheet.component';
 import { FilterBarComponent } from '../components/filter-bar/filter-bar.component';
@@ -15,6 +16,7 @@ import { RecipeSearchBarComponent } from '../components/recipe-search-bar/recipe
 import { ChatButtonComponent } from '../../chat/components/chat-button/chat-button.component';
 import { ChatPanelComponent } from '../../chat/components/chat-panel/chat-panel.component';
 import { ChatStore } from '../../chat/chat.store';
+import { RecipeResponse } from '../models/recipe.model';
 import { AiResultsBannerComponent } from '../components/ai-results-banner/ai-results-banner.component';
 
 @Component({
@@ -44,6 +46,7 @@ export class DashboardComponent implements OnInit {
   readonly #platformId = inject(PLATFORM_ID);
   readonly filter = inject(RecipeFilterService);
   readonly chat = inject(ChatStore);
+  readonly #detailService = inject(RecipeDetailService);
 
   readonly Error = Error;
   readonly recipes = this.#recipeList.recipes;
@@ -122,6 +125,18 @@ export class DashboardComponent implements OnInit {
   async #handleMobileToDesktopTransition(): Promise<void> {
     if (this.chat.hasAiResults()) return;
 
+    const messages = this.chat.messages();
+
+    for (const msg of messages) {
+      if (msg.role === 'recipe' && msg.recipeContext?.modifiedRecipe) {
+        this.chat.setAiDraft(
+          msg.recipeContext.originalRecipe.id,
+          msg.recipeContext.modifiedRecipe,
+          msg.recipeContext.changedFields ?? [],
+        );
+      }
+    }
+
     const activeRecipeId = this.chat.activeRecipeId();
     const recipeCards = this.chat.extractRecipeCardDtos();
     if (recipeCards.length === 0) return;
@@ -139,6 +154,28 @@ export class DashboardComponent implements OnInit {
       this.chat.activateRecipeMessage(firstRecipeId);
       this.chat.focusRecipeMessage(firstRecipeId);
       this.chat.open();
+      return;
+    }
+
+    const activeRecipeId = this.chat.activeRecipeId();
+    if (!activeRecipeId) return;
+
+    const activeDraft = this.chat.getAiDraft(activeRecipeId);
+    const aiModified = activeDraft ? null : this.#detailService.aiModifiedRecipe();
+    const detailRecipe = this.#detailService.recipe.value();
+
+    if (detailRecipe && detailRecipe.id === activeRecipeId) {
+      this.chat.expandRecipe(
+        detailRecipe as unknown as RecipeResponse,
+        activeDraft?.draft ?? aiModified ?? undefined,
+        activeDraft?.changedFields ?? undefined,
+        !!(activeDraft || aiModified),
+      );
+      const newId = this.chat.findRecipeMessageId(activeRecipeId);
+      if (newId !== null) {
+        this.chat.focusRecipeMessage(newId);
+        this.chat.open();
+      }
     }
   }
 }

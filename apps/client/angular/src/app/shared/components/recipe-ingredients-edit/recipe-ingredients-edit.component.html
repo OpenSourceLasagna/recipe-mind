@@ -1,11 +1,9 @@
 <section class="space-y-4">
-  <!-- Header -->
   <div>
     <h2 class="text-lg font-semibold">Ingredients</h2>
     <p class="text-sm text-muted-foreground">Add every ingredient with quantity and unit.</p>
   </div>
 
-  <!-- Desktop column headers -->
   <div
     class="hidden sm:grid sm:grid-cols-[80px_96px_1fr_40px] gap-2 px-1 text-xs font-medium text-muted-foreground uppercase tracking-wider"
   >
@@ -15,13 +13,11 @@
     <span></span>
   </div>
 
-  <!-- Ingredient rows -->
   <ul class="space-y-2">
     @for (item of ingredients(); track trackByIndex($index); let index = $index) {
       <li
         class="group flex flex-col sm:flex-row items-start sm:items-center gap-2 rounded-lg border bg-background p-3 sm:p-2 transition-colors hover:bg-muted/30"
       >
-        <!-- Quantity -->
         <div class="flex items-center gap-2 w-full sm:w-auto">
           <label class="sm:hidden text-xs font-medium text-muted-foreground w-14">Qty</label>
           <input
@@ -32,11 +28,10 @@
             class="w-full sm:w-20"
             placeholder="1"
             [value]="item.quantity"
-            (input)="updateIngredient(index, { quantity: +$any($event.target).value })"
+            (input)="onQuantityInput(index, $event)"
           />
         </div>
 
-        <!-- Unit -->
         <div class="flex items-center gap-2 w-full sm:w-auto">
           <label class="sm:hidden text-xs font-medium text-muted-foreground w-14">Unit</label>
           <input
@@ -45,11 +40,10 @@
             class="w-full sm:w-24"
             placeholder="cups"
             [value]="item.unit"
-            (input)="updateIngredient(index, { unit: $any($event.target).value })"
+            (input)="onUnitInput(index, $event)"
           />
         </div>
 
-        <!-- Ingredient name -->
         <div class="flex items-center gap-2 w-full sm:flex-1">
           <label class="sm:hidden text-xs font-medium text-muted-foreground w-14">Name</label>
           <input
@@ -58,11 +52,10 @@
             class="flex-1"
             placeholder="All-purpose flour"
             [value]="item.ingredientName"
-            (input)="updateIngredient(index, { ingredientName: $any($event.target).value })"
+            (input)="onNameInput(index, $event)"
           />
         </div>
 
-        <!-- Delete button -->
         <div class="w-full sm:w-10 flex justify-end">
           <button
             hlmBtn
@@ -80,7 +73,6 @@
     }
   </ul>
 
-  <!-- Add button -->
   <button
     hlmBtn
     variant="outline"
@@ -93,7 +85,6 @@
     Add ingredient
   </button>
 
-  <!-- Error message -->
   @if (hasError()) {
     <p class="text-destructive text-sm font-medium">
       {{ errorMessage() }}

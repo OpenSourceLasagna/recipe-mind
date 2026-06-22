@@ -1,0 +1,58 @@
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "title": "Classic Pasta Carbonara",
+  "additionalInformation": ["Contains eggs", "Contains dairy"],
+  "instructionSteps": [
+    "Boil water and cook pasta until al dente",
+    "Fry pancetta until crispy",
+    "Mix eggs with parmesan cheese",
+    "Combine pasta with pancetta and egg mixture",
+    "Serve immediately with extra parmesan"
+  ],
+  "nutrition": {
+    "calories": 450,
+    "protein": "22g",
+    "carbs": "48g",
+    "fat": "18g"
+  },
+  "servings": 4,
+  "durationMinutes": 30,
+  "difficulty": "medium",
+  "spiceLevel": 1,
+  "origin": "Italian",
+  "isPublic": true,
+  "ingredients": [
+    {
+      "id": "ing-1",
+      "ingredientName": "Spaghetti",
+      "quantity": 400,
+      "unit": "g",
+      "categoryId": null
+    },
+    {
+      "id": "ing-2",
+      "ingredientName": "Pancetta",
+      "quantity": 150,
+      "unit": "g",
+      "categoryId": null
+    },
+    {
+      "id": "ing-3",
+      "ingredientName": "Eggs",
+      "quantity": 4,
+      "unit": "pieces",
+      "categoryId": null
+    },
+    {
+      "id": "ing-4",
+      "ingredientName": "Parmesan",
+      "quantity": 100,
+      "unit": "g",
+      "categoryId": null
+    }
+  ],
+  "createdAt": "2024-01-01T00:00:00Z",
+  "updatedAt": "2024-01-01T00:00:00Z",
+  "isOwner": true,
+  "modifiedRecipe": null
+}

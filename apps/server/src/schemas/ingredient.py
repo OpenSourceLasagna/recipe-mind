@@ -21,7 +21,7 @@ class RecipeIngredientUpdate(CamelModel):
 
 
 class RecipeIngredientResponse(CamelModel):
-    id: UUID
+    id: UUID | None = None
     ingredient_name: str
     quantity: float
     unit: str

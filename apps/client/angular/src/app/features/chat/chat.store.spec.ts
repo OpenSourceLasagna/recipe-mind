@@ -836,4 +836,102 @@ describe('ChatStore', () => {
       expect(store.activeRecipeId()).toBe('r1');
     });
   });
+
+  describe('aiDrafts', () => {
+    const makeRecipe = (overrides: Partial<{ id: string; title: string }> = {}) =>
+      ({
+        id: overrides.id ?? 'r1',
+        title: overrides.title ?? 'Test Recipe',
+        additionalInformation: [],
+        instructionSteps: [],
+        nutrition: {},
+        servings: 4,
+        durationMinutes: 30,
+        difficulty: 'medium' as const,
+        spiceLevel: 2,
+        origin: 'Italian',
+        isPublic: false,
+        ingredients: [],
+        createdAt: '',
+        updatedAt: '',
+      } as any);
+
+    it('should start with empty aiDrafts', () => {
+      expect(store.aiDrafts()).toEqual({});
+    });
+
+    it('should start with draftNotificationCount of 0', () => {
+      expect(store.draftNotificationCount()).toBe(0);
+    });
+
+    it('should set a draft and increment notification count', () => {
+      const recipe = makeRecipe();
+      store.setAiDraft('r1', recipe, ['title']);
+
+      expect(store.getAiDraft('r1')).toEqual({ draft: recipe, changedFields: ['title'] });
+      expect(store.draftNotificationCount()).toBe(1);
+    });
+
+    it('should replace an existing draft', () => {
+      const recipe1 = makeRecipe({ title: 'First' });
+      const recipe2 = makeRecipe({ title: 'Second' });
+      store.setAiDraft('r1', recipe1, ['title']);
+      store.setAiDraft('r1', recipe2, ['servings']);
+
+      expect(store.getAiDraft('r1')?.draft.title).toBe('Second');
+      expect(store.getAiDraft('r1')?.changedFields).toEqual(['servings']);
+      expect(store.draftNotificationCount()).toBe(2);
+    });
+
+    it('should return null for non-existent draft', () => {
+      expect(store.getAiDraft('nonexistent')).toBeNull();
+    });
+
+    it('should clear a draft without changing notification count', () => {
+      const recipe = makeRecipe();
+      store.setAiDraft('r1', recipe, ['title']);
+      const countBefore = store.draftNotificationCount();
+      store.clearAiDraft('r1');
+      expect(store.getAiDraft('r1')).toBeNull();
+      expect(store.draftNotificationCount()).toBe(countBefore);
+    });
+
+    it('should consume a draft and return it', () => {
+      const recipe = makeRecipe();
+      store.setAiDraft('r1', recipe, ['title']);
+      const consumed = store.consumeAiDraft('r1');
+      expect(consumed).toEqual({ draft: recipe, changedFields: ['title'] });
+      expect(store.getAiDraft('r1')).toBeNull();
+    });
+
+    it('should acknowledge draft processing and decrement count', () => {
+      const recipe = makeRecipe();
+      store.setAiDraft('r1', recipe, ['title']);
+      store.acknowledgeDraftProcessed();
+      expect(store.draftNotificationCount()).toBe(0);
+    });
+
+    it('should handle multiple drafts independently', () => {
+      const r1 = makeRecipe({ id: 'r1' });
+      const r2 = makeRecipe({ id: 'r2' });
+      store.setAiDraft('r1', r1, ['title']);
+      store.setAiDraft('r2', r2, ['servings']);
+
+      expect(store.draftNotificationCount()).toBe(2);
+      expect(store.getAiDraft('r1')).not.toBeNull();
+      expect(store.getAiDraft('r2')).not.toBeNull();
+
+      store.acknowledgeDraftProcessed();
+      expect(store.draftNotificationCount()).toBe(1);
+      store.acknowledgeDraftProcessed();
+      expect(store.draftNotificationCount()).toBe(0);
+    });
+
+    it('should reset aiDrafts and notification count on reset', () => {
+      store.setAiDraft('r1', makeRecipe(), ['title']);
+      store.reset();
+      expect(store.aiDrafts()).toEqual({});
+      expect(store.draftNotificationCount()).toBe(0);
+    });
+  });
 });

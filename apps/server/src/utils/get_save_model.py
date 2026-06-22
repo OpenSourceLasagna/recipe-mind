@@ -1,11 +1,15 @@
+import logging
 import hashlib
 import json
 from pathlib import Path
 from typing import Any, Callable
 
+
 from sentence_transformers import CrossEncoder, SentenceTransformer
 from optimum.onnxruntime import ORTModelForSequenceClassification  # pyright: ignore[reportMissingTypeStubs]
 from transformers import AutoTokenizer
+
+logger = logging.getLogger(__name__)
 
 
 MANIFEST_FILENAME = "_SECURITY_MANIFEST.json"
@@ -111,7 +115,7 @@ def _base_get_save_path(
     model_path = Path(base_path, folder_name)
 
     if not model_path.exists():
-        print(f"Downloading model {model_name} to {model_path}...")
+        logger.info("Downloading model %s to %s...", model_name, model_path)
         model = create_model(model_name)
 
         if use_pretrained_save:
@@ -123,6 +127,7 @@ def _base_get_save_path(
         _write_manifest(model_path, manifest)
         print(f"Model saved with {len(manifest)} verified files.")
     else:
+        logger.info("Loading model from %s...", model_path)
         print(f"Loading model from {model_path}...")
         stored = _read_manifest(model_path)
         if stored is not None:
