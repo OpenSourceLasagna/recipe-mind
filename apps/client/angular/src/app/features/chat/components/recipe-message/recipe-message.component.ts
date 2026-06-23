@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
+  heroArrowsPointingOut,
   heroChevronDown,
   heroChevronUp,
   heroEye,
@@ -31,6 +32,7 @@ import { RecipeResponse } from '../../../dashboard/models/recipe.model';
   imports: [NgIcon, HlmButton, HlmBadge, RecipeDetailViewComponent, TitleCasePipe],
   providers: [
     provideIcons({
+      heroArrowsPointingOut,
       heroChevronDown,
       heroChevronUp,
       heroEye,
@@ -79,6 +81,17 @@ import { RecipeResponse } from '../../../dashboard/models/recipe.model';
               [name]="isExpanded() ? 'heroChevronUp' : 'heroChevronDown'"
               class="size-4"
             />
+          </button>
+          <button
+            hlmBtn
+            variant="ghost"
+            size="icon"
+            type="button"
+            aria-label="Open recipe in split view"
+            class="size-7"
+            (click)="onFullscreenClick($event)"
+          >
+            <ng-icon hlm name="heroArrowsPointingOut" class="size-4" />
           </button>
           <button
             hlmBtn
@@ -166,6 +179,7 @@ export class RecipeMessageComponent {
   readonly activateClick = output<void>();
   readonly saveAsCopyClick = output<RecipeResponse>();
   readonly dismissChangesClick = output<void>();
+  readonly fullscreenClick = output<void>();
 
   readonly isExpanded = signal(true);
   readonly viewMode = signal<'original' | 'modified'>('original');
@@ -186,6 +200,12 @@ export class RecipeMessageComponent {
     effect(() => {
       if (!this.recipeContext().isActive && this.isExpanded()) {
         this.isExpanded.set(false);
+      }
+    });
+
+    effect(() => {
+      if (this.recipeContext().isActive && !this.isExpanded()) {
+        this.isExpanded.set(true);
       }
     });
   }
@@ -209,6 +229,11 @@ export class RecipeMessageComponent {
   onActivateClick(event: Event): void {
     event.stopPropagation();
     this.activateClick.emit();
+  }
+
+  onFullscreenClick(event: Event): void {
+    event.stopPropagation();
+    this.fullscreenClick.emit();
   }
 
   onSaveAsCopy(event: Event): void {

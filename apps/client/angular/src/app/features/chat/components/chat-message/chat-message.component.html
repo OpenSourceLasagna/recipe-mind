@@ -11,7 +11,7 @@
         {{ message().content }}
       </div>
     </div>
-  } @else if (message().role === 'recipe' && message().recipeContext && isMobile()) {
+  } @else if (message().role === 'recipe' && message().recipeContext) {
     <app-recipe-message
       [recipeContext]="message().recipeContext!"
       (collapseClick)="collapseClick.emit(message().id)"
@@ -22,6 +22,7 @@
       (dismissChangesClick)="dismissChangesClick.emit(message().id)"
       (cancelEditClick)="cancelEditClick.emit(message().id)"
       (activateClick)="activateClick.emit(message().id)"
+      (fullscreenClick)="fullscreenClick.emit(message().id)"
     />
   } @else {
     <div class="flex justify-start">
@@ -29,45 +30,25 @@
         <markdown [data]="message().content" />
         @if (!isPending()) {
           @if (message().additionalContent; as extra) {
-            @if (!isDesktopResultsMode()) {
-              @if (extra.recipeList; as recipes) {
-                @for (recipe of recipes; track recipe.id) {
-                  <div class="recipe-card">
-                    <h4>{{ recipe.title }}</h4>
-                    <app-recipe-card
-                      [recipe]="mapRecipeToCardDto(recipe)"
-                      (cardClick)="handleRecipeCardClick(recipe.id)"
-                    />
-                  </div>
-                }
-              }
-            } @else {
-              @if (extra.recipeList; as recipes) {
-                <p class="text-sm text-muted-foreground not-prose">
-                  Found {{ recipes.length }} recipe{{ recipes.length === 1 ? '' : 's' }}
-                </p>
+            @if (extra.recipeList; as recipes) {
+              @for (recipe of recipes; track recipe.id) {
+                <div class="recipe-card">
+                  <h4>{{ recipe.title }}</h4>
+                  <app-recipe-card
+                    [recipe]="mapRecipeToCardDto(recipe)"
+                    (cardClick)="handleRecipeCardClick(recipe.id)"
+                  />
+                </div>
               }
             }
             @if (extra.recipeDraft; as draft) {
-              @if (isDesktop() && isActiveRecipeDraft()) {
-                <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30 border border-border text-sm not-prose mt-2">
+              <div class="rounded-lg border border-border bg-card p-3 not-prose mt-2">
+                <div class="flex items-center gap-2">
                   <ng-icon hlm name="heroSparkles" class="size-4 text-primary shrink-0" />
-                  <span class="text-foreground">
-                    Recipe updated &mdash; {{ draftChangedCount() }} {{ draftChangedCount() === 1 ? 'change' : 'changes' }} applied
-                  </span>
+                  <span class="text-sm font-medium truncate">{{ draft.title }}</span>
+                  <span class="text-xs text-muted-foreground shrink-0">{{ extra.changedFields?.length ?? 0 }} {{ (extra.changedFields?.length ?? 0) === 1 ? 'change' : 'changes' }}</span>
                 </div>
-              } @else {
-                <div class="rounded-lg border border-border bg-card p-3 not-prose mt-2">
-                  <div class="flex items-center gap-2 mb-2">
-                    <ng-icon hlm name="heroSparkles" class="size-4 text-primary shrink-0" />
-                    <span class="text-sm font-medium truncate">{{ draft.title }}</span>
-                    <span class="text-xs text-muted-foreground shrink-0">{{ draftChangedCount() }} {{ draftChangedCount() === 1 ? 'change' : 'changes' }}</span>
-                  </div>
-                  <button hlmBtn variant="outline" size="sm" class="w-full" (click)="handleRecipeCardClick(draft.id)">
-                    View Changes
-                  </button>
-                </div>
-              }
+              </div>
             }
           }
         } @else {

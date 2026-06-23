@@ -1,5 +1,5 @@
-<div class="lg:flex lg:h-[calc(100dvh-4.5rem)]">
-  <div class="flex-1 min-w-0 p-4 lg:overflow-y-auto">
+<div>
+  <div class="p-4">
     <div class="flex items-center justify-between mb-3">
       <h1 class="text-xl font-semibold">Explore Recipes</h1>
       <div class="flex items-center gap-2">
@@ -20,17 +20,13 @@
       </div>
     </div>
 
-    @if (!isDesktopResultsMode()) {
-      <div class="w-full mb-4">
-        <app-recipe-search-bar />
-      </div>
+    <div class="w-full mb-4">
+      <app-recipe-search-bar />
+    </div>
 
-      <app-filter-bar class="hidden md:flex mb-4" />
-    } @else {
-      <app-ai-results-banner (dismiss)="dismissAiResults()" />
-    }
+    <app-filter-bar class="hidden md:flex mb-4" />
 
-    @if (recipes.isLoading() && !isDesktopResultsMode()) {
+    @if (recipes.isLoading()) {
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         @for (_ of skeletonItems; track $index) {
           <hlm-card class="w-full">
@@ -61,34 +57,23 @@
       </p>
     }
 
-    @if (displayRecipes(); as items) {
+    @if (recipes.hasValue()) {
+      @let items = recipes.value().items;
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         @for (recipe of items; track recipe.id) {
           <app-recipe-card [recipe]="recipe" (cardClick)="openDetails($event)" />
         } @empty {
           <p class="col-span-full text-center text-muted-foreground py-12">
-            @if (isDesktopResultsMode()) {
-              No recipes found
-            } @else {
-              No recipes match your filters
-            }
+            No recipes match your filters
           </p>
         }
       </div>
     }
   </div>
-
-  @if (chat.isOpen()) {
-    <div
-      class="hidden lg:block relative w-96 border-l border-border bg-background -mt-4 right-0 bottom-0"
-    >
-      <app-chat-panel class="h-full" />
-    </div>
-  }
 </div>
 
 @if (chat.isOpen()) {
-  <div class="lg:hidden fixed inset-x-0 top-0 bottom-16 md:bottom-0 z-40 bg-background">
+  <div class="fixed inset-x-0 top-0 bottom-16 md:bottom-0 z-40 bg-background">
     <app-chat-panel class="h-full" />
   </div>
 }

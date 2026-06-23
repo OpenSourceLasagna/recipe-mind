@@ -73,10 +73,10 @@ export class RecipeDetailService {
       return;
     }
     this.#recipeId.set(id);
+    this.viewMode.set('original');
     this.isEditing.set(false);
     this.#saveError.set(null);
     if (!id) {
-      this.viewMode.set('original');
       this.#aiModifiedRecipe.set(null);
       this.#aiChangedFields.set([]);
     }

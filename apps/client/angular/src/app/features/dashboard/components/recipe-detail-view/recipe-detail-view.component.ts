@@ -111,6 +111,8 @@ export class RecipeDetailViewComponent {
 
   readonly variant = input<'page' | 'inline'>('page');
 
+  readonly showChatButton = input(true);
+
   readonly backClick = output<void>();
   readonly editClick = output<void>();
   readonly saveClick = output<RecipePatchRequest>();

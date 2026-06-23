@@ -11,7 +11,6 @@ import { ChatStore } from './chat.store';
 import { ChatRequest } from './models/chat-request.model';
 import { ChatMessage, PendingChatMessage } from './models/chat-message.model';
 import { FetchService } from '../../core/services/fetch.service';
-import { RecipeCardDto, toRecipeCardDto } from '../dashboard/models/recipe-card.dto';
 import { RecipeResponse } from '../dashboard/models/recipe.model';
 
 type MessageStream = {
@@ -242,7 +241,6 @@ export class ChatService {
         case 'recipe_list': {
           const { recipes } = data as { recipes: unknown[] };
           const normalized = recipes.map((r) => this.#normalizeRecipe(r));
-          this.#store.setAiResults(this.#mapToRecipeCardDtos(normalized));
           return {
             value: {
               ...currentStream,
@@ -368,9 +366,5 @@ export class ChatService {
       createdAt: String(r?.['createdAt'] ?? ''),
       updatedAt: String(r?.['updatedAt'] ?? ''),
     } satisfies RecipeResponse;
-  }
-
-  #mapToRecipeCardDtos(recipes: unknown[] | RecipeResponse[]): RecipeCardDto[] {
-    return (recipes as RecipeResponse[]).map((r) => toRecipeCardDto(r));
   }
 }

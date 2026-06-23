@@ -5,7 +5,6 @@ import {
   inject,
   OnDestroy,
   PLATFORM_ID,
-  untracked,
 } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
@@ -45,14 +44,8 @@ export class RecipeDetailComponent implements OnDestroy {
       const params = this.#params();
       const id = params?.['id'];
       if (id) {
-        const draft = untracked(() => this.chat.consumeAiDraft(id));
         this.detail.setRecipeId(id);
         this.chat.setContextRecipe(id);
-        if (draft) {
-          untracked(() => {
-            this.detail.setAiModifiedRecipe(draft.draft, draft.changedFields);
-          });
-        }
       }
     });
   }

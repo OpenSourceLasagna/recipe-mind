@@ -1,5 +1,5 @@
-<div class="lg:flex lg:h-[calc(100dvh-4.5rem)]">
-  <div class="flex-1 min-w-0 lg:overflow-y-auto">
+<div>
+  <div>
     @if (detail.recipe.isLoading()) {
       <div class="max-w-3xl mx-auto px-4 py-6 space-y-6">
         <div class="flex items-center justify-between">
@@ -63,17 +63,10 @@
     }
   </div>
 
-  @if (chat.isOpen()) {
-    <div
-      class="hidden lg:block relative -mt-4 w-96 border-l border-border bg-background right-0 bottom-0"
-    >
-      <app-chat-panel class="h-full" />
-    </div>
-  }
 </div>
 
 @if (chat.isOpen()) {
-  <div class="lg:hidden fixed inset-x-0 top-0 bottom-16 md:bottom-0 z-40 bg-background">
+  <div class="fixed inset-x-0 top-0 bottom-16 md:bottom-0 z-40 bg-background">
     <app-chat-panel class="h-full" />
   </div>
 }

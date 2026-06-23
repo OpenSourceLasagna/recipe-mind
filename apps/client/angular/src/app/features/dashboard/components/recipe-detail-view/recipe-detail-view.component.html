@@ -28,16 +28,18 @@
           <span class="hidden sm:inline">Edit</span>
         </button>
       }
-      <button
-        hlmBtn
-        variant="outline"
-        size="icon"
-        type="button"
-        aria-label="Open AI Chef"
-        (click)="chatClick.emit()"
-      >
-        <ng-icon hlm name="heroSparkles" />
-      </button>
+      @if (showChatButton()) {
+        <button
+          hlmBtn
+          variant="outline"
+          size="icon"
+          type="button"
+          aria-label="Open AI Chef"
+          (click)="chatClick.emit()"
+        >
+          <ng-icon hlm name="heroSparkles" />
+        </button>
+      }
     </div>
   </div>
 

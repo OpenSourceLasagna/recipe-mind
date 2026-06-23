@@ -21,6 +21,7 @@ import { ChatService } from '../../chat.service';
 import { ChatMessageComponent } from '../chat-message/chat-message.component';
 import { PanelChatMessage } from '../../models/chat-message.model';
 import { ContextRecipeCardComponent } from '../context-recipe-card/context-recipe-card.component';
+import { RecipeOverlayComponent } from '../recipe-overlay/recipe-overlay.component';
 import { RecipeResponse } from '../../../dashboard/models/recipe.model';
 import { RecipeDetailService } from '../../../dashboard/services/recipe-detail.service';
 import { RecipeFilterService } from '../../../dashboard/services/recipe-filter.service';
@@ -36,6 +37,7 @@ import { RecipePatchRequest } from '../../../dashboard/models/recipe-edit.model'
     NgIcon,
     ChatMessageComponent,
     ContextRecipeCardComponent,
+    RecipeOverlayComponent,
   ],
   providers: [provideIcons({ heroXMark, heroSparkles, heroPaperAirplane })],
   templateUrl: './chat-panel.component.html',
@@ -46,6 +48,9 @@ export class ChatPanelComponent {
   readonly #service = inject(ChatService);
   readonly #detailService = inject(RecipeDetailService);
   readonly #filterService = inject(RecipeFilterService);
+
+  readonly fullscreenRecipeContext = this.store.fullscreenRecipeContext;
+  readonly isDesktop = this.#filterService.isDesktop;
 
   readonly showCloseConfirm = signal(false);
 
@@ -105,44 +110,15 @@ export class ChatPanelComponent {
 
     effect(() => {
       const count = this.store.draftNotificationCount();
-      if (count === 0 || this.#filterService.isDesktop()) return;
+      if (count === 0) return;
+      const contextRecipe = untracked(() => this.#detailService.recipe.value());
+      untracked(() => this.store.processPendingDrafts(contextRecipe ?? null));
+    });
 
-      const drafts = this.store.aiDrafts();
-      const draftEntries = Object.entries(drafts);
-      if (draftEntries.length === 0) return;
-
-      untracked(() => {
-        for (const [recipeId, draftData] of draftEntries) {
-          const existingMessageId = this.store.findRecipeMessageId(recipeId);
-
-          if (existingMessageId !== null) {
-            this.store.updateRecipeMessageDraft(
-              recipeId,
-              draftData.draft,
-              draftData.changedFields,
-            );
-            this.store.moveRecipeMessageToBottom(existingMessageId);
-            this.store.focusRecipeMessage(existingMessageId);
-          } else {
-            const contextRecipe = untracked(() => this.#detailService.recipe.value());
-            if (contextRecipe && contextRecipe.id === recipeId) {
-              this.store.expandRecipe(
-                contextRecipe as unknown as RecipeResponse,
-                draftData.draft,
-                draftData.changedFields,
-                true,
-              );
-              const newMessageId = this.store.findRecipeMessageId(recipeId);
-              if (newMessageId !== null) {
-                this.store.focusRecipeMessage(newMessageId);
-              }
-            }
-          }
-
-          this.store.clearAiDraft(recipeId);
-          this.store.acknowledgeDraftProcessed();
-        }
-      });
+    effect(() => {
+      if (!this.store.isOpen() && this.store.fullscreenRecipeContext()) {
+        this.store.closeFullscreenRecipe();
+      }
     });
   }
 
@@ -251,6 +227,14 @@ export class ChatPanelComponent {
 
   onHighlightEnd(): void {
     this.store.clearFocusedMessage();
+  }
+
+  onRecipeOverlayClose(): void {
+    this.store.closeFullscreenRecipe();
+  }
+
+  onRecipeFullscreenClick(messageId: number): void {
+    this.store.openFullscreenRecipe(messageId);
   }
 
   private scrollToBottom(): void {

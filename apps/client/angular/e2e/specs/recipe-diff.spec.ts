@@ -4,21 +4,24 @@ import { setupApiMocks } from '../helpers/api.helper';
 
 const RECIPE_ID = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
 
-test.describe('Recipe AI Diff — Desktop', () => {
-  test.beforeEach(async ({ page }) => {
+test.describe('Recipe AI Diff', () => {
+  test('displays recipe title in detail view', async ({ page }) => {
     await setupApiMocks(page, { withRecipeDetail: true, withAiDraft: true });
     await loginAndNavigate(page, `/dashboard/recipes/${RECIPE_ID}`);
     await page.waitForSelector('app-recipe-detail-view', {
       state: 'attached',
       timeout: 15000,
     });
-  });
-
-  test('displays recipe title in detail view', async ({ page }) => {
     await expect(page.locator('h1')).toContainText('Classic Pasta Carbonara');
   });
 
   test('version toggle is hidden when no changes exist', async ({ page }) => {
+    await setupApiMocks(page, { withRecipeDetail: true, withAiDraft: true });
+    await loginAndNavigate(page, `/dashboard/recipes/${RECIPE_ID}`);
+    await page.waitForSelector('app-recipe-detail-view', {
+      state: 'attached',
+      timeout: 15000,
+    });
     const toggle = page.locator('[aria-label="Recipe version"]');
     await expect(toggle).not.toBeAttached();
   });
@@ -26,6 +29,12 @@ test.describe('Recipe AI Diff — Desktop', () => {
   test('shows diff annotations and save/dismiss footer after AI draft', async ({
     page,
   }) => {
+    await setupApiMocks(page, { withRecipeDetail: true, withAiDraft: true });
+    await loginAndNavigate(page, `/dashboard/recipes/${RECIPE_ID}`);
+    await page.waitForSelector('app-recipe-detail-view', {
+      state: 'attached',
+      timeout: 15000,
+    });
     await page.click('button[aria-label="Open AI Chef"]');
     await page.waitForSelector('app-chat-panel', {
       state: 'attached',
@@ -65,9 +74,15 @@ test.describe('Recipe AI Diff — Desktop', () => {
     await expect(dismissBtn).toBeVisible();
   });
 
-  test('dismiss changes on desktop clears diff and hides footer', async ({
+  test('dismiss changes clears diff and hides footer', async ({
     page,
   }) => {
+    await setupApiMocks(page, { withRecipeDetail: true, withAiDraft: true });
+    await loginAndNavigate(page, `/dashboard/recipes/${RECIPE_ID}`);
+    await page.waitForSelector('app-recipe-detail-view', {
+      state: 'attached',
+      timeout: 15000,
+    });
     await page.click('button[aria-label="Open AI Chef"]');
     await page.waitForSelector('app-chat-panel', {
       state: 'attached',
@@ -106,6 +121,12 @@ test.describe('Recipe AI Diff — Desktop', () => {
   test('shows compact notification in chat for active recipe draft', async ({
     page,
   }) => {
+    await setupApiMocks(page, { withRecipeDetail: true, withAiDraft: true });
+    await loginAndNavigate(page, `/dashboard/recipes/${RECIPE_ID}`);
+    await page.waitForSelector('app-recipe-detail-view', {
+      state: 'attached',
+      timeout: 15000,
+    });
     await page.click('button[aria-label="Open AI Chef"]');
     await page.waitForSelector('app-chat-panel', {
       state: 'attached',
@@ -120,16 +141,11 @@ test.describe('Recipe AI Diff — Desktop', () => {
       timeout: 10000,
     });
   });
-});
-
-test.describe('Recipe AI Diff — Mobile', () => {
-  test.beforeEach(async ({ page }) => {
-    await setupApiMocks(page, { withRecipeDetail: true, withAiDraft: true });
-  });
 
   test('spawns single recipe message with changes (no duplicate)', async ({
     page,
   }) => {
+    await setupApiMocks(page, { withRecipeDetail: true, withAiDraft: true });
     await loginAndNavigate(page, '/dashboard/explore');
     await page.waitForLoadState('networkidle');
 
@@ -172,6 +188,7 @@ test.describe('Recipe AI Diff — Mobile', () => {
   test('dismiss changes removes diff view and footer bar', async ({
     page,
   }) => {
+    await setupApiMocks(page, { withRecipeDetail: true, withAiDraft: true });
     await loginAndNavigate(page, '/dashboard/explore');
     await page.waitForLoadState('networkidle');
 
@@ -198,6 +215,7 @@ test.describe('Recipe AI Diff — Mobile', () => {
   });
 
   test('collapsed recipe shows expand toggle in header', async ({ page }) => {
+    await setupApiMocks(page, { withRecipeDetail: true, withAiDraft: true });
     await loginAndNavigate(page, '/dashboard/explore');
     await page.waitForLoadState('networkidle');
 
@@ -234,7 +252,8 @@ test.describe('Recipe AI Diff — Mobile', () => {
     ).toBeVisible();
   });
 
-  test('shows recipe draft card with View Changes button on mobile', async ({ page }) => {
+  test('shows recipe draft card with View Changes button', async ({ page }) => {
+    await setupApiMocks(page, { withRecipeDetail: true, withAiDraft: true });
     await loginAndNavigate(page, '/dashboard/explore');
     await page.waitForLoadState('networkidle');
 
@@ -258,7 +277,8 @@ test.describe('Recipe AI Diff — Mobile', () => {
     await expect(page.locator('text=9 changes')).toBeVisible();
   });
 
-  test('clicking View Changes on mobile expands recipe inline', async ({ page }) => {
+  test('clicking View Changes expands recipe inline', async ({ page }) => {
+    await setupApiMocks(page, { withRecipeDetail: true, withAiDraft: true });
     await loginAndNavigate(page, '/dashboard/explore');
     await page.waitForLoadState('networkidle');
 
@@ -286,74 +306,5 @@ test.describe('Recipe AI Diff — Mobile', () => {
     ).toBeVisible();
     await expect(recipeMessage.locator('text=Save as Copy')).toBeVisible();
     await expect(recipeMessage.locator('text=Dismiss Changes')).toBeVisible();
-  });
-});
-
-test.describe('Recipe AI Diff — Cross-Breakpoint', () => {
-  test('preserves AI changes when resizing from mobile to desktop', async ({
-    page,
-  }) => {
-    await setupApiMocks(page, { withRecipeDetail: true, withAiDraft: true });
-
-    await loginAndNavigate(page, '/dashboard/explore');
-    await page.waitForLoadState('networkidle');
-
-    const chatToggle = page.locator('app-chat-button button');
-    await chatToggle.click();
-
-    await page.waitForSelector('app-chat-panel', {
-      state: 'attached',
-      timeout: 5000,
-    });
-
-    const input = page.locator('app-chat-panel input[type="text"]');
-    await input.fill('Make carbonara healthier');
-    await page.click('app-chat-panel button[aria-label="Send message"]');
-
-    const recipeMessage = page.locator('app-recipe-message');
-    await recipeMessage.first().waitFor({ state: 'attached', timeout: 10000 });
-
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.waitForFunction(() => window.innerWidth === 1440);
-
-    const title = page.locator('h1');
-    await expect(title).toBeVisible({ timeout: 5000 });
-    await expect(title).toContainText('Classic Pasta Carbonara');
-
-    const versionToggle = page.locator('[aria-label="Recipe version"]');
-    await expect(versionToggle).toBeAttached({ timeout: 5000 });
-  });
-
-  test('desktop to mobile transition preserves full recipe data', async ({
-    page,
-  }) => {
-    await setupApiMocks(page, { withRecipeDetail: true, withAiDraft: true });
-
-    await loginAndNavigate(page, '/dashboard/explore');
-    await page.waitForLoadState('networkidle');
-
-    const chatToggle = page.locator('app-chat-button button');
-    await chatToggle.click();
-
-    await page.waitForSelector('app-chat-panel', {
-      state: 'attached',
-      timeout: 5000,
-    });
-
-    const input = page.locator('app-chat-panel input[type="text"]');
-    await input.fill('Find pasta recipes');
-    await page.click('app-chat-panel button[aria-label="Send message"]');
-
-    const recipeMessage = page.locator('app-recipe-message');
-    await recipeMessage.first().waitFor({ state: 'attached', timeout: 10000 });
-
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.waitForFunction(() => window.innerWidth === 1440);
-
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.waitForFunction(() => window.innerWidth === 375);
-
-    await expect(recipeMessage.first()).toBeAttached({ timeout: 5000 });
-    await expect(recipeMessage).toContainText('Save as Copy');
   });
 });
