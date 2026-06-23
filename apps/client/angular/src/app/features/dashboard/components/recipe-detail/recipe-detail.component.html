@@ -50,6 +50,7 @@
         [modifiedRecipe]="detail.aiModifiedRecipe() ?? recipe.modifiedRecipe"
         [isOwner]="recipe.isOwner"
         [isEditing]="detail.isEditing()"
+        [isSaving]="isSaving()"
         [(viewMode)]="detail.viewMode"
         [autoSwitchToChanges]="detail.aiModifiedRecipe() !== null"
         (backClick)="goBack()"

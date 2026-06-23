@@ -37,7 +37,7 @@ export class RecipeFilterService {
   readonly model = signal<FilterModel>({ ...DEFAULT_FILTER_MODEL });
 
   readonly form = form(this.model, (f) => {
-    min(f.spiceMax, 1);
+    min(f.spiceMax, 0);
     max(f.spiceMax, 5);
   });
 

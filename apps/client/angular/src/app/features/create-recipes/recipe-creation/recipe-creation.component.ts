@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { CreationMethodBoxComponent } from '../components/creation-method-box/creation-method-box.component';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { heroDocumentText, heroLink, heroPhoto } from '@ng-icons/heroicons/outline';
+import { heroArrowPath, heroDocumentText, heroLink, heroPhoto } from '@ng-icons/heroicons/outline';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmInputImports } from '@spartan-ng/helm/input';
 import { HlmFieldImports } from '@spartan-ng/helm/field';
@@ -31,7 +31,9 @@ type CreationMethod = 'text' | 'link' | 'image' | 'editor';
     FormsModule,
     RecipeCreationFormComponent,
   ],
-  providers: [provideIcons({ link: heroLink, image: heroPhoto, text: heroDocumentText })],
+  providers: [
+    provideIcons({ link: heroLink, image: heroPhoto, text: heroDocumentText, heroArrowPath }),
+  ],
   templateUrl: './recipe-creation.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

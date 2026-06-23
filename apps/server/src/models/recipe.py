@@ -22,7 +22,7 @@ class Recipe(SQLModel, table=True):
             "difficulty IN ('easy', 'medium', 'hard')", name="check_recipe_difficulty"
         ),
         CheckConstraint(
-            "spice_level >= 1 AND spice_level <= 5", name="check_recipe_spice_level"
+            "spice_level >= 0 AND spice_level <= 5", name="check_recipe_spice_level"
         ),
         Index(
             "idx_recipes_only_public",
@@ -68,7 +68,7 @@ class Recipe(SQLModel, table=True):
         default="medium", sa_column_kwargs={"server_default": "'medium'"}, index=True
     )
     spice_level: int = Field(
-        default=2, sa_column_kwargs={"server_default": "2"}, index=True
+        default=0, sa_column_kwargs={"server_default": "0"}, index=True
     )
     origin: str = Field(
         default="Unknown", sa_column_kwargs={"server_default": "'Unknown'"}

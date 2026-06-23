@@ -11,6 +11,7 @@ import {
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   heroArrowLeft,
+  heroArrowPath,
   heroCheck,
   heroChevronDown,
   heroClock,
@@ -90,6 +91,7 @@ interface EditFormModel {
       heroPlus,
       heroChevronDown,
       heroDocumentDuplicate,
+      heroArrowPath,
     }),
   ],
   templateUrl: './recipe-detail-view.component.html',
@@ -112,6 +114,9 @@ export class RecipeDetailViewComponent {
   readonly variant = input<'page' | 'inline'>('page');
 
   readonly showChatButton = input(true);
+
+  /** Loading state for save operations — set by the parent during async saves. */
+  readonly isSaving = input(false);
 
   readonly backClick = output<void>();
   readonly editClick = output<void>();
@@ -253,7 +258,7 @@ export class RecipeDetailViewComponent {
     servings: 4,
     durationMinutes: 30,
     difficulty: 'medium',
-    spiceLevel: 2,
+    spiceLevel: 0,
     isPublic: false,
   });
 
@@ -261,7 +266,7 @@ export class RecipeDetailViewComponent {
     required(f.title);
     min(f.servings, 1);
     min(f.durationMinutes, 0);
-    min(f.spiceLevel, 1);
+    min(f.spiceLevel, 0);
     max(f.spiceLevel, 5);
   });
 

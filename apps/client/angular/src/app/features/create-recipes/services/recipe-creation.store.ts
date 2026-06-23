@@ -39,6 +39,12 @@ export class RecipeCreationStore {
   ]);
   readonly editorIngredientsTouched = signal(false);
 
+  /** Instruction steps — each step is its own editable entry. */
+  readonly editInstructions = signal<string[]>(['']);
+
+  /** Additional information notes — each note is its own editable entry. */
+  readonly editAdditionalInfo = signal<string[]>([]);
+
   readonly ingredientsValid = computed(() => {
     const list = this.editorIngredients();
     if (list.length === 0) {
@@ -53,8 +59,49 @@ export class RecipeCreationStore {
         };
   });
 
-  /** True when the editor form and ingredients are both valid. */
-  readonly editorReady = computed(() => this.editorForm().valid() && this.ingredientsValid().valid);
+  readonly instructionsValid = computed(() => {
+    const steps = this.editInstructions().filter((s) => s.trim().length > 0);
+    if (steps.length === 0) {
+      return { valid: false, message: 'Add at least one instruction step' };
+    }
+    return { valid: true, message: null };
+  });
+
+  /** True when the editor form, ingredients, and instructions are all valid. */
+  readonly editorReady = computed(
+    () =>
+      this.editorForm().valid() && this.ingredientsValid().valid && this.instructionsValid().valid,
+  );
+
+  // ── Instruction step helpers ──
+
+  addInstruction(): void {
+    this.editInstructions.update((list) => [...list, '']);
+  }
+
+  removeInstruction(index: number): void {
+    this.editInstructions.update((list) => list.filter((_, i) => i !== index));
+  }
+
+  onInstructionInput(index: number, event: Event): void {
+    const value = (event.target as HTMLTextAreaElement).value;
+    this.editInstructions.update((list) => list.map((step, i) => (i === index ? value : step)));
+  }
+
+  // ── Additional info helpers ──
+
+  addAdditionalInfo(): void {
+    this.editAdditionalInfo.update((list) => [...list, '']);
+  }
+
+  removeAdditionalInfo(index: number): void {
+    this.editAdditionalInfo.update((list) => list.filter((_, i) => i !== index));
+  }
+
+  onAdditionalInfoInput(index: number, event: Event): void {
+    const value = (event.target as HTMLTextAreaElement).value;
+    this.editAdditionalInfo.update((list) => list.map((item, i) => (i === index ? value : item)));
+  }
 
   setActiveMethod(method: CreationMethod): void {
     this.activeMethod.set(method);
@@ -73,10 +120,8 @@ export class RecipeCreationStore {
       servings: 4,
       durationMinutes: 0,
       difficulty: 'medium',
-      spiceLevel: 2,
+      spiceLevel: 0,
       isPublic: false,
-      instructionsText: '',
-      additionalInformationText: '',
       dietTagsText: '',
       calories: '',
       protein: '',
@@ -85,6 +130,8 @@ export class RecipeCreationStore {
     });
     this.editorIngredients.set([{ ingredientName: '', quantity: 1, unit: '' }]);
     this.editorIngredientsTouched.set(false);
+    this.editInstructions.set(['']);
+    this.editAdditionalInfo.set([]);
   }
 
   resetEditor(): void {
@@ -94,10 +141,8 @@ export class RecipeCreationStore {
       servings: 4,
       durationMinutes: 0,
       difficulty: 'medium',
-      spiceLevel: 2,
+      spiceLevel: 0,
       isPublic: false,
-      instructionsText: '',
-      additionalInformationText: '',
       dietTagsText: '',
       calories: '',
       protein: '',
@@ -106,6 +151,8 @@ export class RecipeCreationStore {
     });
     this.editorIngredients.set([{ ingredientName: '', quantity: 1, unit: '' }]);
     this.editorIngredientsTouched.set(false);
+    this.editInstructions.set(['']);
+    this.editAdditionalInfo.set([]);
   }
 
   /** Build a CreateRecipeRequest from the current editor state. */
@@ -119,15 +166,13 @@ export class RecipeCreationStore {
         unit: row.unit.trim(),
       }));
 
-    const instructions = model.instructionsText
-      .split(/\r?\n/)
+    const instructions = this.editInstructions()
       .map((line) => line.trim())
-      .filter((line) => line.length);
+      .filter((line) => line.length > 0);
 
-    const additionalInformation = model.additionalInformationText
-      .split(/\r?\n/)
+    const additionalInformation = this.editAdditionalInfo()
       .map((line) => line.trim())
-      .filter((line) => line.length);
+      .filter((line) => line.length > 0);
 
     const nutrition: Record<string, number> = {};
     const addNutrition = (key: string, raw: string) => {
@@ -183,16 +228,20 @@ export class RecipeCreationStore {
       servings: data.servings || 4,
       durationMinutes: data.durationMinutes || 0,
       difficulty: (data.difficulty as 'easy' | 'medium' | 'hard') ?? 'medium',
-      spiceLevel: data.spiceLevel ?? 2,
+      spiceLevel: data.spiceLevel ?? 0,
       isPublic: data.isPublic ?? false,
-      instructionsText: (data.instructionSteps ?? []).join('\n'),
-      additionalInformationText: (data.additionalInformation ?? []).join('\n'),
       dietTagsText: '',
       calories: nutrition['calories'] != null ? String(nutrition['calories']) : '',
       protein: nutrition['protein'] != null ? String(nutrition['protein']) : '',
       carbs: nutrition['carbs'] != null ? String(nutrition['carbs']) : '',
       fat: nutrition['fat'] != null ? String(nutrition['fat']) : '',
     });
+
+    const instructions = data.instructionSteps ?? [];
+    this.editInstructions.set(instructions.length > 0 ? instructions : ['']);
+
+    const additionalInfo = data.additionalInformation ?? [];
+    this.editAdditionalInfo.set(additionalInfo);
 
     const ingredients = (data.ingredients ?? []).map((ing) => ({
       ingredientName: ing.ingredientName ?? '',
