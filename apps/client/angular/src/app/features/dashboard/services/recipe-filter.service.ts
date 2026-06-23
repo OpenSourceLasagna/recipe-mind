@@ -24,6 +24,9 @@ export class RecipeFilterService {
 
   #resolveIsDesktop(): boolean {
     if (!isPlatformBrowser(this.#platformId)) return true;
+    if (typeof window !== 'undefined' && typeof window.innerWidth === 'number') {
+      return window.innerWidth >= 1024;
+    }
     try {
       return window.matchMedia?.('(min-width: 1024px)').matches ?? true;
     } catch {
@@ -96,6 +99,14 @@ export class RecipeFilterService {
   });
 
   constructor() {
+    effect((onCleanup) => {
+      if (!isPlatformBrowser(this.#platformId) || typeof window.matchMedia !== 'function') return;
+      const mql = window.matchMedia('(min-width: 1024px)');
+      const listener = (e: MediaQueryListEvent) => this.isDesktop.set(e.matches);
+      mql.addEventListener('change', listener);
+      onCleanup(() => mql.removeEventListener('change', listener));
+    });
+
     effect((onCleanup) => {
       if (!this.isDesktop()) return;
       this.model();

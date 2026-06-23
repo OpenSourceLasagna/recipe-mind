@@ -11,7 +11,6 @@ import { ChatStore } from './chat.store';
 import { ChatRequest } from './models/chat-request.model';
 import { ChatMessage, PendingChatMessage } from './models/chat-message.model';
 import { FetchService } from '../../core/services/fetch.service';
-import { RecipeCardDto } from '../dashboard/models/recipe-card.dto';
 import { RecipeResponse } from '../dashboard/models/recipe.model';
 
 type MessageStream = {
@@ -76,7 +75,10 @@ export class ChatService {
         });
       }
     } finally {
-      result.set({ value: { message: null, status: null } });
+      const current = result();
+      if (!('error' in current)) {
+        result.set({ value: { message: null, status: null } });
+      }
       this.#store.setLoading(false);
     }
   }
@@ -95,12 +97,10 @@ export class ChatService {
   }
 
   private finalizeMessage(message: PendingChatMessage) {
-    const isAssistantMessage = (m: any): m is ChatMessage =>
-      typeof (m as ChatMessage)?.content == 'string' && (m as ChatMessage)?.role == 'assistant';
-    if (!message || !isAssistantMessage(message)) {
+    if (!message || typeof message.content !== 'string' || message.role !== 'assistant') {
       return;
     }
-    this.#store.addMessage(message);
+    this.#store.addMessage(message as ChatMessage);
   }
 
   private async handleResponse(
@@ -191,6 +191,26 @@ export class ChatService {
     const currentStream = currentItem.value;
     const currentMsg = currentStream.message;
 
+    if (type === 'recipe_draft') {
+      const { draft, changed_fields } = data as { draft: unknown; changed_fields: string[] };
+      const normalizedDraft = this.#normalizeRecipe(draft);
+      this.#store.setAiDraft(normalizedDraft.id, normalizedDraft, changed_fields);
+      result.update(() => ({
+        value: {
+          ...currentStream,
+          message: {
+            ...currentMsg,
+            additionalContent: {
+              ...currentMsg?.additionalContent,
+              recipeDraft: normalizedDraft,
+              changedFields: changed_fields,
+            },
+          },
+        },
+      }));
+      return;
+    }
+
     result.update(() => {
       switch (type) {
         case 'text':
@@ -217,7 +237,6 @@ export class ChatService {
         case 'recipe_list': {
           const { recipes } = data as { recipes: unknown[] };
           const normalized = recipes.map((r) => this.#normalizeRecipe(r));
-          this.#store.setAiResults(this.#mapToRecipeCardDtos(normalized));
           return {
             value: {
               ...currentStream,
@@ -231,24 +250,6 @@ export class ChatService {
             },
           };
         }
-
-        case 'recipe_draft': {
-          const { draft, changed_fields } = data as { draft: unknown; changed_fields: string[] };
-          return {
-            value: {
-              ...currentStream,
-              message: {
-                ...currentMsg,
-                additionalContent: {
-                  ...currentMsg?.additionalContent,
-                  recipeDraft: draft,
-                  changedFields: changed_fields,
-                },
-              },
-            },
-          };
-        }
-
         default:
           return currentItem;
       }
@@ -258,14 +259,9 @@ export class ChatService {
   private getTransformedHistory(): ChatRequest['conversationHistory'] {
     return this.#store.messages().map(({ role, content, additionalContent, recipeContext }) => {
       if (role === 'recipe' && recipeContext) {
-        const recipe = recipeContext.modifiedRecipe ?? recipeContext.originalRecipe;
-        const ingredientsList =
-          recipe.ingredients?.map((i: any) => i.ingredientName).join(', ') || 'None';
-        const contextContent = `- Title: "${recipe.title}" (ID: ${recipe.id}) | Ingredients: [${ingredientsList}]`;
-
         return {
           role: 'assistant' as const,
-          content: `[Context - Recipe in Chat:\n${contextContent}]`,
+          content: this.#formatRecipeContext(recipeContext),
         };
       }
 
@@ -273,52 +269,66 @@ export class ChatService {
         return { role, content };
       }
 
-      let compiledContent = content;
+      const parts = [content];
 
-      if (additionalContent.recipeList && additionalContent.recipeList.length > 0) {
-        const recipesBlock = additionalContent.recipeList
-          .map((r: any) => {
-            const ingredientsList =
-              r.ingredients?.map((i: any) => i.ingredientName).join(', ') || 'None';
-            return `- Title: "${r.title}" (ID: ${r.id}) | Ingredients: [${ingredientsList}]`;
-          })
-          .join('\n');
+      const listBlock = this.#formatRecipeListContext(additionalContent);
+      if (listBlock) parts.push(listBlock);
 
-        compiledContent += `\n\n[Context - Displayed Recipes:\n${recipesBlock}]`;
-      }
-
-      if (additionalContent.recipeDraft) {
-        const draft = additionalContent.recipeDraft as Record<string, any>;
-        const fields = additionalContent.changedFields;
-        let draftPayload: any = draft;
-
-        if (fields && fields.length > 0) {
-          draftPayload = {};
-
-          for (const field of fields) {
-            if (field in draft) {
-              draftPayload[field] = draft[field];
-            } else {
-              const nestedTarget =
-                draft['ingredients']?.find?.((i: any) => field in i) ||
-                draft['instructions']?.find?.((step: any) => field in step);
-
-              if (nestedTarget) {
-                draftPayload[field] = nestedTarget[field];
-              }
-            }
-          }
-        }
-
-        const draftJson = JSON.stringify(draftPayload, null, 2);
-        compiledContent += `\n\n[Context - Active Recipe Draft Modifications:\n${draftJson}]`;
-      }
+      const draftBlock = this.#formatDraftContext(additionalContent);
+      if (draftBlock) parts.push(draftBlock);
 
       return {
         role,
-        content: compiledContent,
+        content: parts.filter(Boolean).join('\n\n'),
       };
     });
+  }
+
+  #formatRecipeContext(recipeContext: ChatMessage['recipeContext']): string {
+    const recipe = recipeContext!.modifiedRecipe ?? recipeContext!.originalRecipe;
+    const ingredientsList = recipe.ingredients?.map((i) => i.ingredientName).join(', ') || 'None';
+    const contextContent = `- Title: "${recipe.title}" (ID: ${recipe.id}) | Ingredients: [${ingredientsList}]`;
+    return `[Context - Recipe in Chat:\n${contextContent}]`;
+  }
+
+  #formatRecipeListContext(additionalContent: ChatMessage['additionalContent']): string | null {
+    if (!additionalContent?.recipeList?.length) return null;
+
+    const recipesBlock = additionalContent.recipeList
+      .map((r) => {
+        const ingredientsList = r.ingredients?.map((i) => i.ingredientName).join(', ') || 'None';
+        return `- Title: "${r.title}" (ID: ${r.id}) | Ingredients: [${ingredientsList}]`;
+      })
+      .join('\n');
+
+    return `[Context - Displayed Recipes:\n${recipesBlock}]`;
+  }
+
+  #formatDraftContext(additionalContent: ChatMessage['additionalContent']): string | null {
+    if (!additionalContent?.recipeDraft) return null;
+
+    const draft = additionalContent.recipeDraft as unknown as Record<string, unknown>;
+    const fields = additionalContent.changedFields;
+    let draftPayload: Record<string, unknown> = draft;
+
+    if (fields && fields.length > 0) {
+      draftPayload = {};
+      for (const field of fields) {
+        if (field in draft) {
+          draftPayload[field] = draft[field];
+        } else {
+          const ingredients = Array.isArray(draft['ingredients'])
+            ? (draft['ingredients'] as Record<string, unknown>[])
+            : null;
+          const nestedTarget = ingredients?.find((i) => field in i) ?? null;
+          if (nestedTarget) {
+            draftPayload[field] = nestedTarget[field];
+          }
+        }
+      }
+    }
+
+    return `[Context - Active Recipe Draft Modifications:\n${JSON.stringify(draftPayload, null, 2)}]`;
   }
 
   #normalizeRecipe(raw: unknown): RecipeResponse {
@@ -346,16 +356,5 @@ export class ChatService {
       createdAt: String(r?.['createdAt'] ?? ''),
       updatedAt: String(r?.['updatedAt'] ?? ''),
     } satisfies RecipeResponse;
-  }
-
-  #mapToRecipeCardDtos(recipes: unknown[] | RecipeResponse[]): RecipeCardDto[] {
-    return recipes.map((r: any) => ({
-      id: r.id,
-      title: r.title,
-      difficulty: r.difficulty,
-      spice_level: r.spiceLevel,
-      durationMinutes: r.durationMinutes,
-      servings: r.servings,
-    }));
   }
 }

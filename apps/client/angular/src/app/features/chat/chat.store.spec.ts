@@ -167,70 +167,6 @@ describe('ChatStore', () => {
     });
   });
 
-  describe('aiResults', () => {
-    it('should start with no ai results', () => {
-      expect(store.aiResults()).toBeNull();
-      expect(store.hasAiResults()).toBe(false);
-    });
-
-    it('should set ai results', () => {
-      const recipes = [
-        {
-          id: '1',
-          title: 'Pasta',
-          difficulty: 'easy' as const,
-          spice_level: 1,
-          durationMinutes: 30,
-          servings: 4,
-        },
-      ];
-      store.setAiResults(recipes);
-
-      expect(store.aiResults()).toEqual(recipes);
-      expect(store.hasAiResults()).toBe(true);
-    });
-
-    it('should clear ai results', () => {
-      store.setAiResults([
-        {
-          id: '1',
-          title: 'Pasta',
-          difficulty: 'easy' as const,
-          spice_level: 1,
-          durationMinutes: 30,
-          servings: 4,
-        },
-      ]);
-      store.clearAiResults();
-
-      expect(store.aiResults()).toBeNull();
-      expect(store.hasAiResults()).toBe(false);
-    });
-
-    it('should treat empty array as no results', () => {
-      store.setAiResults([]);
-
-      expect(store.hasAiResults()).toBe(false);
-    });
-
-    it('should clear ai results on reset', () => {
-      store.setAiResults([
-        {
-          id: '1',
-          title: 'Pasta',
-          difficulty: 'easy' as const,
-          spice_level: 1,
-          durationMinutes: 30,
-          servings: 4,
-        },
-      ]);
-      store.reset();
-
-      expect(store.aiResults()).toBeNull();
-      expect(store.hasAiResults()).toBe(false);
-    });
-  });
-
   describe('recipe context management', () => {
     it('should start with no context recipe', () => {
       expect(store.contextRecipeId()).toBeNull();
@@ -581,207 +517,6 @@ describe('ChatStore', () => {
     });
   });
 
-  describe('removeAllRecipeMessages', () => {
-    it('should remove all recipe messages', () => {
-      const recipe1 = { id: 'recipe-1', title: 'Pasta' } as any;
-      const recipe2 = { id: 'recipe-2', title: 'Pizza' } as any;
-      store.expandRecipe(recipe1);
-      store.expandRecipe(recipe2);
-
-      store.removeAllRecipeMessages();
-
-      expect(store.messages().length).toBe(0);
-    });
-
-    it('should not remove non-recipe messages', () => {
-      store.addMessage({ role: 'user', content: 'hello' });
-      const recipe = { id: 'recipe-1', title: 'Pasta' } as any;
-      store.expandRecipe(recipe);
-      store.addMessage({ role: 'assistant', content: 'hi' });
-
-      store.removeAllRecipeMessages();
-
-      expect(store.messages().length).toBe(2);
-      expect(store.messages()[0].role).toBe('user');
-      expect(store.messages()[1].role).toBe('assistant');
-    });
-
-    it('should return extracted recipe card DTOs', () => {
-      const recipe1 = {
-        id: 'r1',
-        title: 'Pasta',
-        difficulty: 'easy',
-        spiceLevel: 1,
-        durationMinutes: 30,
-        servings: 4,
-      } as any;
-      const recipe2 = {
-        id: 'r2',
-        title: 'Pizza',
-        difficulty: 'medium',
-        spiceLevel: 2,
-        durationMinutes: 45,
-        servings: 2,
-      } as any;
-      store.expandRecipe(recipe1);
-      store.expandRecipe(recipe2);
-
-      const result = store.removeAllRecipeMessages();
-
-      expect(result.length).toBe(2);
-      expect(result[0].id).toBe('r1');
-      expect(result[0].title).toBe('Pasta');
-      expect(result[0].spice_level).toBe(1);
-      expect(result[1].id).toBe('r2');
-      expect(result[1].spice_level).toBe(2);
-    });
-
-    it('should return empty array when no recipe messages', () => {
-      store.addMessage({ role: 'user', content: 'hello' });
-
-      const result = store.removeAllRecipeMessages();
-
-      expect(result).toEqual([]);
-      expect(store.messages().length).toBe(1);
-    });
-
-    it('should clear active recipe after bulk removal', () => {
-      const recipe = { id: 'r1', title: 'Pasta' } as any;
-      store.expandRecipe(recipe);
-
-      store.removeAllRecipeMessages();
-
-      expect(store.activeRecipeId()).toBeNull();
-    });
-  });
-
-  describe('extractRecipeCardDtos', () => {
-    it('should return empty array when no recipe messages exist', () => {
-      store.addMessage({ role: 'user', content: 'hello' });
-      store.addMessage({ role: 'assistant', content: 'hi' });
-
-      const result = store.extractRecipeCardDtos();
-
-      expect(result).toEqual([]);
-      expect(store.messages().length).toBe(2);
-    });
-
-    it('should return correctly mapped card DTOs from recipe messages', () => {
-      const recipe1 = {
-        id: 'r1',
-        title: 'Pasta',
-        difficulty: 'easy',
-        spiceLevel: 1,
-        durationMinutes: 30,
-        servings: 4,
-      } as any;
-      const recipe2 = {
-        id: 'r2',
-        title: 'Pizza',
-        difficulty: 'medium',
-        spiceLevel: 2,
-        durationMinutes: 45,
-        servings: 2,
-      } as any;
-      store.expandRecipe(recipe1);
-      store.expandRecipe(recipe2);
-
-      const result = store.extractRecipeCardDtos();
-
-      expect(result.length).toBe(2);
-      expect(result[0].id).toBe('r1');
-      expect(result[0].title).toBe('Pasta');
-      expect(result[0].difficulty).toBe('easy');
-      expect(result[0].spice_level).toBe(1);
-      expect(result[0].durationMinutes).toBe(30);
-      expect(result[0].servings).toBe(4);
-      expect(result[1].id).toBe('r2');
-      expect(result[1].spice_level).toBe(2);
-    });
-
-    it('should NOT remove messages from the store', () => {
-      const recipe = {
-        id: 'r1',
-        title: 'Pasta',
-        difficulty: 'easy',
-        spiceLevel: 1,
-        durationMinutes: 30,
-        servings: 4,
-      } as any;
-      store.expandRecipe(recipe);
-      expect(store.messages().length).toBe(1);
-
-      store.extractRecipeCardDtos();
-
-      expect(store.messages().length).toBe(1);
-      expect(store.isRecipeExpanded('r1')).toBe(true);
-    });
-
-    it('should only extract from recipe role messages', () => {
-      store.addMessage({ role: 'user', content: 'hello' });
-      const recipe = {
-        id: 'r1',
-        title: 'Pasta',
-        difficulty: 'easy',
-        spiceLevel: 1,
-        durationMinutes: 30,
-        servings: 4,
-      } as any;
-      store.expandRecipe(recipe);
-      store.addMessage({ role: 'assistant', content: 'hi' });
-
-      const result = store.extractRecipeCardDtos();
-
-      expect(result.length).toBe(1);
-      expect(result[0].id).toBe('r1');
-      expect(store.messages().length).toBe(3);
-    });
-  });
-
-  describe('findFirstRecipeMessageId', () => {
-    it('should return null when no recipe messages exist', () => {
-      store.addMessage({ role: 'user', content: 'hello' });
-
-      expect(store.findFirstRecipeMessageId()).toBeNull();
-    });
-
-    it('should return the id of the first recipe message', () => {
-      const recipe = {
-        id: 'r1',
-        title: 'Pasta',
-        difficulty: 'easy',
-        spiceLevel: 1,
-        durationMinutes: 30,
-        servings: 4,
-      } as any;
-      store.expandRecipe(recipe);
-      const messageId = store.messages()[0].id;
-
-      expect(store.findFirstRecipeMessageId()).toBe(messageId);
-    });
-
-    it('should skip non-recipe messages to find the first recipe one', () => {
-      store.addMessage({ role: 'user', content: 'hello' });
-      const recipe = {
-        id: 'r1',
-        title: 'Pasta',
-        difficulty: 'easy',
-        spiceLevel: 1,
-        durationMinutes: 30,
-        servings: 4,
-      } as any;
-      store.expandRecipe(recipe);
-      store.addMessage({ role: 'assistant', content: 'hi' });
-
-      const expectedId = store.messages()[1].id;
-      expect(store.findFirstRecipeMessageId()).toBe(expectedId);
-    });
-
-    it('should return null when no messages at all', () => {
-      expect(store.findFirstRecipeMessageId()).toBeNull();
-    });
-  });
-
   describe('active recipe tracking', () => {
     it('should deactivate all existing recipes when expanding a new one', () => {
       const recipe1 = { id: 'r1', title: 'Pasta' } as any;
@@ -834,6 +569,186 @@ describe('ChatStore', () => {
       store.activateRecipeMessage(msg1Id);
 
       expect(store.activeRecipeId()).toBe('r1');
+    });
+  });
+
+  describe('aiDrafts', () => {
+    const makeRecipe = (overrides: Partial<{ id: string; title: string }> = {}) =>
+      ({
+        id: overrides.id ?? 'r1',
+        title: overrides.title ?? 'Test Recipe',
+        additionalInformation: [],
+        instructionSteps: [],
+        nutrition: {},
+        servings: 4,
+        durationMinutes: 30,
+        difficulty: 'medium' as const,
+        spiceLevel: 2,
+        origin: 'Italian',
+        isPublic: false,
+        ingredients: [],
+        createdAt: '',
+        updatedAt: '',
+      }) as any;
+
+    it('should start with empty aiDrafts', () => {
+      expect(store.aiDrafts()).toEqual({});
+    });
+
+    it('should start with draftNotificationCount of 0', () => {
+      expect(store.draftNotificationCount()).toBe(0);
+    });
+
+    it('should set a draft and increment notification count', () => {
+      const recipe = makeRecipe();
+      store.setAiDraft('r1', recipe, ['title']);
+
+      expect(store.getAiDraft('r1')).toEqual({ draft: recipe, changedFields: ['title'] });
+      expect(store.draftNotificationCount()).toBe(1);
+    });
+
+    it('should replace an existing draft', () => {
+      const recipe1 = makeRecipe({ title: 'First' });
+      const recipe2 = makeRecipe({ title: 'Second' });
+      store.setAiDraft('r1', recipe1, ['title']);
+      store.setAiDraft('r1', recipe2, ['servings']);
+
+      expect(store.getAiDraft('r1')?.draft.title).toBe('Second');
+      expect(store.getAiDraft('r1')?.changedFields).toEqual(['servings']);
+      expect(store.draftNotificationCount()).toBe(2);
+    });
+
+    it('should return null for non-existent draft', () => {
+      expect(store.getAiDraft('nonexistent')).toBeNull();
+    });
+
+    it('should clear a draft without changing notification count', () => {
+      const recipe = makeRecipe();
+      store.setAiDraft('r1', recipe, ['title']);
+      const countBefore = store.draftNotificationCount();
+      store.clearAiDraft('r1');
+      expect(store.getAiDraft('r1')).toBeNull();
+      expect(store.draftNotificationCount()).toBe(countBefore);
+    });
+
+    it('should consume a draft and return it', () => {
+      const recipe = makeRecipe();
+      store.setAiDraft('r1', recipe, ['title']);
+      const consumed = store.consumeAiDraft('r1');
+      expect(consumed).toEqual({ draft: recipe, changedFields: ['title'] });
+      expect(store.getAiDraft('r1')).toBeNull();
+    });
+
+    it('should acknowledge draft processing and decrement count', () => {
+      const recipe = makeRecipe();
+      store.setAiDraft('r1', recipe, ['title']);
+      store.acknowledgeDraftProcessed();
+      expect(store.draftNotificationCount()).toBe(0);
+    });
+
+    it('should handle multiple drafts independently', () => {
+      const r1 = makeRecipe({ id: 'r1' });
+      const r2 = makeRecipe({ id: 'r2' });
+      store.setAiDraft('r1', r1, ['title']);
+      store.setAiDraft('r2', r2, ['servings']);
+
+      expect(store.draftNotificationCount()).toBe(2);
+      expect(store.getAiDraft('r1')).not.toBeNull();
+      expect(store.getAiDraft('r2')).not.toBeNull();
+
+      store.acknowledgeDraftProcessed();
+      expect(store.draftNotificationCount()).toBe(1);
+      store.acknowledgeDraftProcessed();
+      expect(store.draftNotificationCount()).toBe(0);
+    });
+
+    it('should reset aiDrafts and notification count on reset', () => {
+      store.setAiDraft('r1', makeRecipe(), ['title']);
+      store.reset();
+      expect(store.aiDrafts()).toEqual({});
+      expect(store.draftNotificationCount()).toBe(0);
+    });
+  });
+
+  describe('fullscreenRecipeContext', () => {
+    const makeRecipe = (overrides: Partial<{ id: string; title: string }> = {}) =>
+      ({
+        id: overrides.id ?? 'r1',
+        title: overrides.title ?? 'Test Recipe',
+        additionalInformation: [],
+        instructionSteps: [],
+        nutrition: {},
+        servings: 4,
+        durationMinutes: 30,
+        difficulty: 'medium' as const,
+        spiceLevel: 2,
+        origin: 'Italian',
+        isPublic: false,
+        ingredients: [],
+        createdAt: '',
+        updatedAt: '',
+      }) as any;
+
+    it('should start with null fullscreen state', () => {
+      expect(store.fullscreenRecipeContext()).toBeNull();
+      expect(store.fullscreenSourceMessageId()).toBeNull();
+    });
+
+    it('should open fullscreen, set context, and collapse source message', () => {
+      const recipe = makeRecipe();
+      store.expandRecipe(recipe);
+      const messageId = store.messages()[0].id;
+
+      store.openFullscreenRecipe(messageId);
+
+      expect(store.fullscreenRecipeContext()).not.toBeNull();
+      expect(store.fullscreenRecipeContext()?.originalRecipe.id).toBe('r1');
+      expect(store.fullscreenSourceMessageId()).toBe(messageId);
+      expect(store.messages()[0].recipeContext?.isActive).toBe(false);
+    });
+
+    it('should close fullscreen, re-activate and focus source message', () => {
+      const recipe = makeRecipe();
+      store.expandRecipe(recipe);
+      const messageId = store.messages()[0].id;
+
+      store.openFullscreenRecipe(messageId);
+      store.closeFullscreenRecipe();
+
+      expect(store.fullscreenRecipeContext()).toBeNull();
+      expect(store.fullscreenSourceMessageId()).toBeNull();
+      expect(store.messages()[0].recipeContext?.isActive).toBe(true);
+      expect(store.activeRecipeId()).toBe('r1');
+      expect(store.focusedMessageId()).toBe(messageId);
+    });
+
+    it('should do nothing on openFullscreen with non-recipe message', () => {
+      store.addMessage({ role: 'user', content: 'hello' });
+      const messageId = store.messages()[0].id;
+
+      store.openFullscreenRecipe(messageId);
+
+      expect(store.fullscreenRecipeContext()).toBeNull();
+      expect(store.fullscreenSourceMessageId()).toBeNull();
+    });
+
+    it('should do nothing on openFullscreen with non-existent message', () => {
+      store.openFullscreenRecipe(999);
+
+      expect(store.fullscreenRecipeContext()).toBeNull();
+      expect(store.fullscreenSourceMessageId()).toBeNull();
+    });
+
+    it('should clear fullscreen state on reset', () => {
+      const recipe = makeRecipe();
+      store.expandRecipe(recipe);
+      const messageId = store.messages()[0].id;
+      store.openFullscreenRecipe(messageId);
+
+      store.reset();
+
+      expect(store.fullscreenRecipeContext()).toBeNull();
+      expect(store.fullscreenSourceMessageId()).toBeNull();
     });
   });
 });

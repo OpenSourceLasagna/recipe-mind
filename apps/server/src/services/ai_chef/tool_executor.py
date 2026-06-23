@@ -192,6 +192,7 @@ def apply_recipe_patch(
                         continue
                 new_ingredients.append(
                     {
+                        "id": None,
                         "ingredient_name": ing["ingredient_name"],
                         "quantity": ing["quantity"],
                         "unit": ing["unit"],

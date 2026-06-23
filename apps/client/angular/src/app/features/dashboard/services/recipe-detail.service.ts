@@ -4,6 +4,8 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { RecipeDetailResponse } from '../models/recipe-detail.model';
 import { RecipePatchRequest } from '../models/recipe-edit.model';
+import { RecipeResponse } from '../models/recipe.model';
+import { getChangedFieldNames } from '../utils/recipe-diff.utils';
 
 @Injectable({ providedIn: 'root' })
 export class RecipeDetailService {
@@ -25,45 +27,36 @@ export class RecipeDetailService {
 
   readonly isEditing = signal(false);
 
+  readonly #aiModifiedRecipe = signal<RecipeResponse | null>(null);
+  readonly #aiChangedFields = signal<string[]>([]);
+  readonly aiModifiedRecipe = this.#aiModifiedRecipe.asReadonly();
+
   readonly viewMode = signal<'original' | 'modified'>('original');
 
   readonly activeRecipe = computed(() => {
     const detail = this.recipe.value();
     if (!detail) return undefined;
-    return this.viewMode() === 'modified' && detail.modifiedRecipe ? detail.modifiedRecipe : detail;
+    const aiModified = this.#aiModifiedRecipe();
+    if (this.viewMode() === 'modified') {
+      return aiModified ?? detail.modifiedRecipe ?? detail;
+    }
+    return detail;
   });
 
-  readonly hasModified = computed(() => !!this.recipe.value()?.modifiedRecipe);
+  readonly hasModified = computed(
+    () => !!this.recipe.value()?.modifiedRecipe || !!this.#aiModifiedRecipe(),
+  );
 
   readonly isOwner = computed(() => this.recipe.value()?.isOwner ?? false);
 
   readonly changedFields = computed(() => {
+    const aiFields = this.#aiChangedFields();
     const detail = this.recipe.value();
-    if (!detail?.modifiedRecipe) return new Set<string>();
+    const changed = new Set<string>(aiFields);
 
-    const orig = detail;
-    const mod = detail.modifiedRecipe;
-    const changed = new Set<string>();
-
-    if (orig.title !== mod.title) changed.add('title');
-    if (orig.servings !== mod.servings) changed.add('servings');
-    if (orig.durationMinutes !== mod.durationMinutes) changed.add('durationMinutes');
-    if (orig.difficulty !== mod.difficulty) changed.add('difficulty');
-    if (orig.spiceLevel !== mod.spiceLevel) changed.add('spiceLevel');
-    if (orig.origin !== mod.origin) changed.add('origin');
-    if (orig.isPublic !== mod.isPublic) changed.add('isPublic');
-
-    if (JSON.stringify(orig.additionalInformation) !== JSON.stringify(mod.additionalInformation)) {
-      changed.add('additionalInformation');
-    }
-    if (JSON.stringify(orig.ingredients) !== JSON.stringify(mod.ingredients)) {
-      changed.add('ingredients');
-    }
-    if (JSON.stringify(orig.instructionSteps) !== JSON.stringify(mod.instructionSteps)) {
-      changed.add('instructionSteps');
-    }
-    if (JSON.stringify(orig.nutrition) !== JSON.stringify(mod.nutrition)) {
-      changed.add('nutrition');
+    if (detail?.modifiedRecipe) {
+      const apiFields = getChangedFieldNames(detail, detail.modifiedRecipe);
+      apiFields.forEach((f) => changed.add(f));
     }
 
     return changed;
@@ -73,11 +66,32 @@ export class RecipeDetailService {
   readonly saveError = this.#saveError.asReadonly();
 
   setRecipeId(id: string): void {
-    if (this.#recipeId() === id) return;
+    if (this.#recipeId() === id) {
+      this.viewMode.set('original');
+      this.isEditing.set(false);
+      this.#saveError.set(null);
+      return;
+    }
     this.#recipeId.set(id);
-    this.isEditing.set(false);
     this.viewMode.set('original');
+    this.isEditing.set(false);
     this.#saveError.set(null);
+    if (!id) {
+      this.#aiModifiedRecipe.set(null);
+      this.#aiChangedFields.set([]);
+    }
+  }
+
+  setAiModifiedRecipe(recipe: RecipeResponse, changedFields: string[]): void {
+    this.#aiModifiedRecipe.set(recipe);
+    this.#aiChangedFields.set(changedFields);
+    this.viewMode.set('modified');
+  }
+
+  clearAiModifiedRecipe(): void {
+    this.#aiModifiedRecipe.set(null);
+    this.#aiChangedFields.set([]);
+    this.viewMode.set('original');
   }
 
   toggleEdit(): void {

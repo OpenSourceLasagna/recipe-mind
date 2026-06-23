@@ -67,6 +67,18 @@ export class RecipeIngredientsEditComponent {
     this.touched.set(true);
   }
 
+  onQuantityInput(index: number, event: Event): void {
+    this.updateIngredient(index, { quantity: +(event.target as HTMLInputElement).value });
+  }
+
+  onUnitInput(index: number, event: Event): void {
+    this.updateIngredient(index, { unit: (event.target as HTMLInputElement).value });
+  }
+
+  onNameInput(index: number, event: Event): void {
+    this.updateIngredient(index, { ingredientName: (event.target as HTMLInputElement).value });
+  }
+
   /** Track by index for performance (rows are ephemeral during editing). */
   trackByIndex(index: number): number {
     return index;

@@ -1,0 +1,14 @@
+event: status
+data: {"status":"thinking"}
+
+event: status
+data: {"status":"searching"}
+
+event: status
+data: {"status":"generating"}
+
+event: text
+data: {"text":"I found these recipes for you."}
+
+event: recipe_list
+data: {"recipes":[{"id":"b2c3d4e5-f6a7-8901-bcde-f12345678901","title":"Margherita Pizza","additionalInformation":["Vegetarian"],"instructionSteps":["Make dough","Add toppings","Bake"],"nutrition":{"calories":600},"servings":2,"durationMinutes":45,"difficulty":"medium","spiceLevel":1,"origin":"Italian","isPublic":true,"ingredients":[{"id":"ing-5","ingredientName":"Flour","quantity":500,"unit":"g","categoryId":null},{"id":"ing-6","ingredientName":"Mozzarella","quantity":200,"unit":"g","categoryId":null}],"createdAt":"2024-01-02T00:00:00Z","updatedAt":"2024-01-02T00:00:00Z"}]}

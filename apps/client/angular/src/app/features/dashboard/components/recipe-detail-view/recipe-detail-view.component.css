@@ -1,0 +1,10 @@
+.section-changed {
+  border-left-width: 2px;
+  border-left-style: solid;
+  border-color: hsl(var(--primary));
+  border-top-right-radius: calc(var(--radius) * 2);
+  border-bottom-right-radius: calc(var(--radius) * 2);
+  padding-left: 0.75rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}

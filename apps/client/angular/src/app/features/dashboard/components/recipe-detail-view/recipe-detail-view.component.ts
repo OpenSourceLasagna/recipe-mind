@@ -14,6 +14,7 @@ import {
   heroCheck,
   heroChevronDown,
   heroClock,
+  heroDocumentDuplicate,
   heroFire,
   heroPencil,
   heroPlus,
@@ -38,6 +39,14 @@ import { RecipePatchRequest } from '../../models/recipe-edit.model';
 import { RecipeDifficultyBadgeComponent } from '../../../../shared/components/recipe-difficulty-badge/recipe-difficulty-badge.component';
 import { RecipeMetaBarComponent } from '../../../../shared/components/recipe-meta-bar/recipe-meta-bar.component';
 import { RecipeIngredientsEditComponent } from '../../../../shared/components/recipe-ingredients-edit/recipe-ingredients-edit.component';
+import {
+  computeRecipeDiff,
+  getChangedFieldNames,
+  type RecipeDiff,
+  type IngredientDiffItem,
+  type TextListDiffItem,
+  type NutritionDiffItem,
+} from '../../utils/recipe-diff.utils';
 
 interface EditFormModel {
   title: string;
@@ -80,9 +89,11 @@ interface EditFormModel {
       heroTrash,
       heroPlus,
       heroChevronDown,
+      heroDocumentDuplicate,
     }),
   ],
   templateUrl: './recipe-detail-view.component.html',
+  styleUrl: './recipe-detail-view.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecipeDetailViewComponent {
@@ -96,54 +107,43 @@ export class RecipeDetailViewComponent {
 
   readonly viewMode = model<'original' | 'modified'>('original');
 
+  readonly autoSwitchToChanges = input(false);
+
+  readonly variant = input<'page' | 'inline'>('page');
+
+  readonly showChatButton = input(true);
+
   readonly backClick = output<void>();
   readonly editClick = output<void>();
   readonly saveClick = output<RecipePatchRequest>();
   readonly cancelEditClick = output<void>();
   readonly chatClick = output<void>();
+  readonly saveAsCopyClick = output<RecipeResponse>();
+  readonly dismissChangesClick = output<void>();
 
   readonly DIFFICULTIES: readonly Difficulty[] = ['easy', 'medium', 'hard'];
 
   readonly hasModified = computed(() => this.modifiedRecipe() !== null);
 
-  /** The recipe currently displayed (original or modified). */
-  readonly activeRecipe = computed(() => {
-    if (this.viewMode() === 'modified' && this.modifiedRecipe()) {
-      return this.modifiedRecipe()!;
-    }
-    return this.recipe();
+  readonly recipeDiff = computed((): RecipeDiff | null => {
+    const mod = this.modifiedRecipe();
+    if (!mod) return null;
+    return computeRecipeDiff(this.recipe(), mod);
   });
+
+  readonly showVersionToggle = computed(() => {
+    if (!this.hasModified()) return false;
+    return this.changedFields().size > 0;
+  });
+
+  /** Always returns the original recipe — diffs are overlaid in the template. */
+  readonly activeRecipe = computed(() => this.recipe());
 
   /** Set of field names that differ between original and modified. */
   readonly changedFields = computed(() => {
     const mod = this.modifiedRecipe();
     if (!mod) return new Set<string>();
-
-    const orig = this.recipe();
-    const changed = new Set<string>();
-
-    if (orig.title !== mod.title) changed.add('title');
-    if (orig.servings !== mod.servings) changed.add('servings');
-    if (orig.durationMinutes !== mod.durationMinutes) changed.add('durationMinutes');
-    if (orig.difficulty !== mod.difficulty) changed.add('difficulty');
-    if (orig.spiceLevel !== mod.spiceLevel) changed.add('spiceLevel');
-    if (orig.origin !== mod.origin) changed.add('origin');
-    if (orig.isPublic !== mod.isPublic) changed.add('isPublic');
-
-    if (JSON.stringify(orig.additionalInformation) !== JSON.stringify(mod.additionalInformation)) {
-      changed.add('additionalInformation');
-    }
-    if (JSON.stringify(orig.ingredients) !== JSON.stringify(mod.ingredients)) {
-      changed.add('ingredients');
-    }
-    if (JSON.stringify(orig.instructionSteps) !== JSON.stringify(mod.instructionSteps)) {
-      changed.add('instructionSteps');
-    }
-    if (JSON.stringify(orig.nutrition) !== JSON.stringify(mod.nutrition)) {
-      changed.add('nutrition');
-    }
-
-    return changed;
+    return getChangedFieldNames(this.recipe(), mod);
   });
 
   /** Section-level change indicators. */
@@ -164,26 +164,88 @@ export class RecipeDetailViewComponent {
     );
   });
 
-  /** Whether the recipe has any nutrition data. */
+  /** Whether the recipe has any nutrition data (original or modified depending on mode). */
   readonly hasNutrition = computed(() => {
-    const n = this.activeRecipe().nutrition;
+    if (this.viewMode() === 'modified') {
+      const diff = this.recipeDiff();
+      if (diff) return diff.nutrition.length > 0;
+    }
+    const n = this.recipe().nutrition;
     return n && Object.keys(n).length > 0;
   });
 
-  /** Nutrition entries as a list for the template. */
+  /** Nutrition entries — diff-aware. */
   readonly nutritionEntries = computed(() => {
-    const n = this.activeRecipe().nutrition;
+    if (this.viewMode() === 'modified') {
+      const diff = this.recipeDiff();
+      if (diff) {
+        return diff.nutrition.map((entry) => ({
+          key: entry.key.charAt(0).toUpperCase() + entry.key.slice(1),
+          value: String(entry.modified !== null ? entry.modified : (entry.original ?? '')),
+          status: entry.status,
+          original: entry.original !== null ? String(entry.original) : null,
+        }));
+      }
+    }
+    const n = this.recipe().nutrition;
     if (!n) return [];
     return Object.entries(n).map(([key, value]) => ({
       key: key.charAt(0).toUpperCase() + key.slice(1),
       value: String(value),
+      status: 'unchanged' as const,
+      original: null,
     }));
   });
 
   /** Whether the recipe has additional information. */
-  readonly hasAdditionalInfo = computed(() => this.activeRecipe().additionalInformation.length > 0);
+  readonly hasAdditionalInfo = computed(() => {
+    if (this.viewMode() === 'modified') {
+      const diff = this.recipeDiff();
+      if (diff) return diff.additionalInformation.length > 0;
+    }
+    return this.recipe().additionalInformation.length > 0;
+  });
 
-  // ── Edit form state ──
+  /** Ingredient items for display — diff-aware. */
+  readonly displayIngredients = computed(() => {
+    if (this.viewMode() === 'modified') {
+      const diff = this.recipeDiff();
+      if (diff) return diff.ingredients;
+    }
+    return this.recipe().ingredients.map((i) => ({
+      status: 'unchanged' as const,
+      original: i,
+      modified: i,
+    }));
+  });
+
+  /** Instruction steps for display — diff-aware. */
+  readonly displayInstructions = computed(() => {
+    if (this.viewMode() === 'modified') {
+      const diff = this.recipeDiff();
+      if (diff) return diff.instructionSteps;
+    }
+    return this.recipe().instructionSteps.map((text, idx) => ({
+      status: 'unchanged' as const,
+      index: idx,
+      original: text,
+      modified: text,
+    }));
+  });
+
+  /** Additional info items for display — diff-aware. */
+  readonly displayAdditionalInfo = computed(() => {
+    if (this.viewMode() === 'modified') {
+      const diff = this.recipeDiff();
+      if (diff) return diff.additionalInformation;
+    }
+    return this.recipe().additionalInformation.map((text, idx) => ({
+      status: 'unchanged' as const,
+      index: idx,
+      original: text,
+      modified: text,
+    }));
+  });
 
   readonly #editModel = signal<EditFormModel>({
     title: '',
@@ -212,8 +274,9 @@ export class RecipeDetailViewComponent {
   readonly editInstructions = signal<string[]>([]);
   readonly editAdditionalInfo = signal<string[]>([]);
 
+  #userSelectedViewMode = false;
+
   constructor() {
-    // Seed edit form whenever edit mode activates
     effect(() => {
       const editing = this.isEditing();
       const active = this.activeRecipe();
@@ -232,15 +295,18 @@ export class RecipeDetailViewComponent {
       this.editInstructions.set([...active.instructionSteps]);
       this.editAdditionalInfo.set([...active.additionalInformation]);
     });
-  }
 
-  // ── Version toggle ──
+    effect(() => {
+      if (this.autoSwitchToChanges() && this.hasModified() && !this.#userSelectedViewMode) {
+        this.viewMode.set('modified');
+      }
+    });
+  }
 
   setViewMode(mode: 'original' | 'modified'): void {
+    this.#userSelectedViewMode = true;
     this.viewMode.set(mode);
   }
-
-  // ── Edit helpers ──
 
   addInstruction(): void {
     this.editInstructions.update((list) => [...list, '']);
@@ -252,6 +318,10 @@ export class RecipeDetailViewComponent {
 
   updateInstruction(index: number, value: string): void {
     this.editInstructions.update((list) => list.map((step, i) => (i === index ? value : step)));
+  }
+
+  onInstructionInput(index: number, event: Event): void {
+    this.updateInstruction(index, (event.target as HTMLTextAreaElement).value);
   }
 
   addAdditionalInfo(): void {
@@ -266,34 +336,35 @@ export class RecipeDetailViewComponent {
     this.editAdditionalInfo.update((list) => list.map((item, i) => (i === index ? value : item)));
   }
 
+  onAdditionalInfoInput(index: number, event: Event): void {
+    this.updateAdditionalInfo(index, (event.target as HTMLTextAreaElement).value);
+  }
+
+  onSpiceLevelInput(event: Event): void {
+    this.editForm.spiceLevel().value.set(+(event.target as HTMLInputElement).value);
+  }
+
   onSave(): void {
-    if (!this.editForm().valid()) {
-      return;
-    }
+    if (!this.editForm().valid()) return;
 
     const active = this.activeRecipe();
     const patch: RecipePatchRequest = {};
 
-    const title = this.editForm.title().value().trim();
-    if (title !== active.title) patch.title = title;
+    function setIfChanged<T>(field: keyof RecipePatchRequest, value: T, compareTo: T) {
+      if (value !== compareTo) (patch as Record<string, unknown>)[field] = value;
+    }
 
-    const origin = this.editForm.origin().value().trim();
-    if (origin !== active.origin) patch.origin = origin;
-
-    const servings = this.editForm.servings().value();
-    if (servings !== active.servings) patch.servings = servings;
-
-    const durationMinutes = this.editForm.durationMinutes().value();
-    if (durationMinutes !== active.durationMinutes) patch.durationMinutes = durationMinutes;
-
-    const difficulty = this.editForm.difficulty().value();
-    if (difficulty !== active.difficulty) patch.difficulty = difficulty;
-
-    const spiceLevel = this.editForm.spiceLevel().value();
-    if (spiceLevel !== active.spiceLevel) patch.spiceLevel = spiceLevel;
-
-    const isPublic = this.editForm.isPublic().value();
-    if (isPublic !== active.isPublic) patch.isPublic = isPublic;
+    setIfChanged('title', this.editForm.title().value().trim(), active.title);
+    setIfChanged('origin', this.editForm.origin().value().trim(), active.origin);
+    setIfChanged('servings', this.editForm.servings().value(), active.servings);
+    setIfChanged(
+      'durationMinutes',
+      this.editForm.durationMinutes().value(),
+      active.durationMinutes,
+    );
+    setIfChanged('difficulty', this.editForm.difficulty().value(), active.difficulty);
+    setIfChanged('spiceLevel', this.editForm.spiceLevel().value(), active.spiceLevel);
+    setIfChanged('isPublic', this.editForm.isPublic().value(), active.isPublic);
 
     const instructions = this.editInstructions().filter((s) => s.trim().length);
     if (JSON.stringify(instructions) !== JSON.stringify(active.instructionSteps)) {
@@ -317,5 +388,17 @@ export class RecipeDetailViewComponent {
     }
 
     this.saveClick.emit(patch);
+  }
+
+  onSaveAsCopy(): void {
+    const modified = this.modifiedRecipe();
+    if (modified) {
+      this.saveAsCopyClick.emit(modified);
+    }
+  }
+
+  onDismissChanges(): void {
+    this.dismissChangesClick.emit();
+    this.viewMode.set('original');
   }
 }

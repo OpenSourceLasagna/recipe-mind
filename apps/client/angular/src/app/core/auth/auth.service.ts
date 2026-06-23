@@ -28,6 +28,16 @@ export class AuthService {
     });
   }
 
+  async restoreSession(): Promise<void> {
+    const { data, error } = await this.#supabase.auth.getSession();
+    if (error) {
+      console.warn('Failed to restore Supabase session:', error.message);
+      return;
+    }
+    this.#currentUser.set(data.session?.user ?? null);
+    this.#session.set(data.session);
+  }
+
   async signUpWithEmailAndPassword(email: string, password: string) {
     const { error } = await this.#supabase.auth.signUp({ email, password });
     if (error) throw error;

@@ -1,4 +1,9 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import {
+  ApplicationConfig,
+  provideBrowserGlobalErrorListeners,
+  provideAppInitializer,
+  inject,
+} from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideMarkdown } from 'ngx-markdown';
 
@@ -7,6 +12,7 @@ import { provideClientHydration, withEventReplay } from '@angular/platform-brows
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { apiAuthInterceptor } from './core/interceptors/api-auth-interceptor';
 import { recipeContextInterceptor } from './core/interceptors/recipe-context-interceptor';
+import { AuthService } from './core/auth/auth.service';
 import { requestIdInterceptor } from './core/interceptors/request-id.interceptor';
 
 export const appConfig: ApplicationConfig = {
@@ -19,5 +25,9 @@ export const appConfig: ApplicationConfig = {
       withFetch(),
     ),
     provideMarkdown(),
+    provideAppInitializer(() => {
+      const authService = inject(AuthService);
+      return authService.restoreSession();
+    }),
   ],
 };

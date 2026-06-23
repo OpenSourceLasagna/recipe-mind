@@ -1,9 +1,7 @@
-<div class="lg:flex lg:h-[calc(100dvh-4.5rem)]">
-  <!-- Main content area -->
-  <div class="flex-1 min-w-0 lg:overflow-y-auto">
+<div>
+  <div>
     @if (detail.recipe.isLoading()) {
       <div class="max-w-3xl mx-auto px-4 py-6 space-y-6">
-        <!-- Skeleton header -->
         <div class="flex items-center justify-between">
           <div hlmSkeleton class="h-9 w-20"></div>
           <div class="flex items-center gap-2">
@@ -12,13 +10,11 @@
           </div>
         </div>
 
-        <!-- Skeleton title -->
         <div class="space-y-2">
           <div hlmSkeleton class="h-4 w-24"></div>
           <div hlmSkeleton class="h-10 w-3/4"></div>
         </div>
 
-        <!-- Skeleton meta -->
         <div class="flex gap-4">
           <div hlmSkeleton class="h-5 w-20"></div>
           <div hlmSkeleton class="h-5 w-20"></div>
@@ -27,7 +23,6 @@
 
         <div hlmSeparator></div>
 
-        <!-- Skeleton sections -->
         @for (_ of skeletonItems; track $index) {
           <div class="space-y-2">
             <div hlmSkeleton class="h-6 w-32"></div>
@@ -50,31 +45,27 @@
 
     @if (detail.recipe.value(); as recipe) {
       <app-recipe-detail-view
+        data-testid="main-recipe-detail"
         [recipe]="recipe"
-        [modifiedRecipe]="recipe.modifiedRecipe"
+        [modifiedRecipe]="detail.aiModifiedRecipe() ?? recipe.modifiedRecipe"
         [isOwner]="recipe.isOwner"
         [isEditing]="detail.isEditing()"
         [(viewMode)]="detail.viewMode"
+        [autoSwitchToChanges]="detail.aiModifiedRecipe() !== null"
         (backClick)="goBack()"
         (editClick)="detail.toggleEdit()"
         (saveClick)="onSave($event)"
+        (saveAsCopyClick)="onSaveAsCopy($event)"
+        (dismissChangesClick)="onDismissChanges()"
         (cancelEditClick)="detail.cancelEdit()"
         (chatClick)="chat.open()"
       />
     }
   </div>
-
-  @if (chat.isOpen()) {
-    <div
-      class="hidden lg:block relative -mt-4 w-96 border-l border-border bg-background right-0 bottom-0"
-    >
-      <app-chat-panel class="h-full" />
-    </div>
-  }
 </div>
 
 @if (chat.isOpen()) {
-  <div class="lg:hidden fixed inset-x-0 top-0 bottom-16 md:bottom-0 z-40 bg-background">
+  <div class="fixed inset-x-0 top-0 bottom-16 md:bottom-0 z-40 bg-background">
     <app-chat-panel class="h-full" />
   </div>
 }

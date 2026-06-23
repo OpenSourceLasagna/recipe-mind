@@ -6,6 +6,7 @@ import {
   ElementRef,
   inject,
   model,
+  signal,
   Signal,
   untracked,
   viewChild,
@@ -20,8 +21,10 @@ import { ChatService } from '../../chat.service';
 import { ChatMessageComponent } from '../chat-message/chat-message.component';
 import { PanelChatMessage } from '../../models/chat-message.model';
 import { ContextRecipeCardComponent } from '../context-recipe-card/context-recipe-card.component';
+import { RecipeOverlayComponent } from '../recipe-overlay/recipe-overlay.component';
 import { RecipeResponse } from '../../../dashboard/models/recipe.model';
 import { RecipeDetailService } from '../../../dashboard/services/recipe-detail.service';
+import { RecipeFilterService } from '../../../dashboard/services/recipe-filter.service';
 import { RecipePatchRequest } from '../../../dashboard/models/recipe-edit.model';
 
 @Component({
@@ -34,6 +37,7 @@ import { RecipePatchRequest } from '../../../dashboard/models/recipe-edit.model'
     NgIcon,
     ChatMessageComponent,
     ContextRecipeCardComponent,
+    RecipeOverlayComponent,
   ],
   providers: [provideIcons({ heroXMark, heroSparkles, heroPaperAirplane })],
   templateUrl: './chat-panel.component.html',
@@ -43,6 +47,12 @@ export class ChatPanelComponent {
   readonly store = inject(ChatStore);
   readonly #service = inject(ChatService);
   readonly #detailService = inject(RecipeDetailService);
+  readonly #filterService = inject(RecipeFilterService);
+
+  readonly fullscreenRecipeContext = this.store.fullscreenRecipeContext;
+  readonly isDesktop = this.#filterService.isDesktop;
+
+  readonly showCloseConfirm = signal(false);
 
   readonly inputValue = model('');
 
@@ -97,6 +107,19 @@ export class ChatPanelComponent {
         untracked(() => this.scrollToMessage(focusedId));
       }
     });
+
+    effect(() => {
+      const count = this.store.draftNotificationCount();
+      if (count === 0) return;
+      const contextRecipe = untracked(() => this.#detailService.recipe.value());
+      untracked(() => this.store.processPendingDrafts(contextRecipe ?? null));
+    });
+
+    effect(() => {
+      if (!this.store.isOpen() && this.store.fullscreenRecipeContext()) {
+        this.store.closeFullscreenRecipe();
+      }
+    });
   }
 
   send(event: Event): void {
@@ -110,12 +133,19 @@ export class ChatPanelComponent {
 
   close(): void {
     if (this.store.hasUnsavedRecipeChanges()) {
-      const confirmed = confirm(
-        'You have unsaved recipe changes. Are you sure you want to close the chat?',
-      );
-      if (!confirmed) return;
+      this.showCloseConfirm.set(true);
+      return;
     }
     this.store.close();
+  }
+
+  confirmClose(): void {
+    this.showCloseConfirm.set(false);
+    this.store.close();
+  }
+
+  cancelClose(): void {
+    this.showCloseConfirm.set(false);
   }
 
   toggleContextExcluded(): void {
@@ -176,12 +206,13 @@ export class ChatPanelComponent {
     this.store.setRecipeEditing(messageId, true);
   }
 
-  onSaveClick(_messageId: number): void {
-    // TODO: Implement save as new recipe functionality
+  onSaveAsCopyClick(event: { messageId: number; modifiedRecipe: RecipeResponse }): void {}
+
+  onDismissChangesClick(messageId: number): void {
+    this.store.dismissRecipeChanges(messageId);
   }
 
   onSaveEditClick(event: { messageId: number; patch: RecipePatchRequest }): void {
-    // TODO: Implement save edit functionality
     this.store.setRecipeEditing(event.messageId, false);
   }
 
@@ -195,6 +226,14 @@ export class ChatPanelComponent {
 
   onHighlightEnd(): void {
     this.store.clearFocusedMessage();
+  }
+
+  onRecipeOverlayClose(): void {
+    this.store.closeFullscreenRecipe();
+  }
+
+  onRecipeFullscreenClick(messageId: number): void {
+    this.store.openFullscreenRecipe(messageId);
   }
 
   private scrollToBottom(): void {

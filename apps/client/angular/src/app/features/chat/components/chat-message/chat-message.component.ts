@@ -1,27 +1,26 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
-import { Router } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { heroSparkles } from '@ng-icons/heroicons/outline';
 import { MarkdownModule } from 'ngx-markdown';
 import { PanelChatMessage } from '../../models/chat-message.model';
-import { RecipeDetailViewComponent } from '../../../dashboard/components/recipe-detail-view/recipe-detail-view.component';
 import { RecipeCardComponent } from '../../../dashboard/components/recipe-card/recipe-card.component';
 import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
-import { ChatStore } from '../../chat.store';
-import { RecipeFilterService } from '../../../dashboard/services/recipe-filter.service';
 import { RecipeMessageComponent } from '../recipe-message/recipe-message.component';
 import { RecipeResponse } from '../../../dashboard/models/recipe.model';
 import { RecipePatchRequest } from '../../../dashboard/models/recipe-edit.model';
-import { RecipeCardDto } from '../../../dashboard/models/recipe-card.dto';
+import { RecipeCardDto, toRecipeCardDto } from '../../../dashboard/models/recipe-card.dto';
 
 @Component({
   selector: 'app-chat-message',
   standalone: true,
   imports: [
     MarkdownModule,
-    RecipeDetailViewComponent,
     RecipeCardComponent,
     HlmSkeletonImports,
     RecipeMessageComponent,
+    NgIcon,
   ],
+  providers: [provideIcons({ heroSparkles })],
   templateUrl: './chat-message.component.html',
   styleUrl: './chat-message.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,20 +35,13 @@ export class ChatMessageComponent {
   readonly editClick = output<number>();
   readonly saveClick = output<number>();
   readonly saveEditClick = output<{ messageId: number; patch: RecipePatchRequest }>();
+  readonly saveAsCopyClick = output<{ messageId: number; modifiedRecipe: RecipeResponse }>();
+  readonly dismissChangesClick = output<number>();
   readonly cancelEditClick = output<number>();
   readonly expandRecipe = output<RecipeResponse>();
   readonly highlightEnd = output<void>();
   readonly activateClick = output<number>();
-
-  private readonly chatStore = inject(ChatStore);
-  private readonly filterService = inject(RecipeFilterService);
-  private readonly router = inject(Router);
-
-  readonly isDesktopResultsMode = computed(
-    () => this.chatStore.hasAiResults() && this.filterService.isDesktop(),
-  );
-
-  readonly isMobile = computed(() => this.filterService.isMobile());
+  readonly fullscreenClick = output<number>();
 
   readonly messageClasses = computed(() => {
     const classes = ['transition-all duration-500'];
@@ -67,25 +59,14 @@ export class ChatMessageComponent {
   }
 
   handleRecipeCardClick(recipeId: string): void {
-    if (this.filterService.isDesktop()) {
-      this.router.navigate(['/dashboard', 'recipes', recipeId]);
-    } else {
-      const recipe = this.getRecipeById(recipeId);
-      if (recipe) {
-        this.expandRecipe.emit(recipe);
-      }
+    const recipe = this.getRecipeById(recipeId);
+    if (recipe) {
+      this.expandRecipe.emit(recipe);
     }
   }
 
   mapRecipeToCardDto(recipe: RecipeResponse): RecipeCardDto {
-    return {
-      id: recipe.id,
-      title: recipe.title,
-      difficulty: recipe.difficulty,
-      spice_level: recipe.spiceLevel,
-      durationMinutes: recipe.durationMinutes,
-      servings: recipe.servings,
-    };
+    return toRecipeCardDto(recipe);
   }
 
   private getRecipeById(recipeId: string): RecipeResponse | null {

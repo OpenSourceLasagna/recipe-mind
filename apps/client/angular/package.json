@@ -11,7 +11,9 @@
     "lint": "prettier --check .",
     "lint:fix": "prettier --write .",
     "typecheck": "tsc --noEmit",
-    "serve:ssr:angular": "node dist/angular/server/server.mjs"
+    "serve:ssr:angular": "node dist/angular/server/server.mjs",
+    "test:e2e": "npx playwright test",
+    "test:e2e:ci": "npx playwright test --project=chromium-desktop --project=chromium-mobile"
   },
   "private": true,
   "packageManager": "npm@9.2.0",
@@ -44,6 +46,7 @@
     "@angular/build": "^21.2.12",
     "@angular/cli": "^21.2.12",
     "@angular/compiler-cli": "^21.2.0",
+    "@playwright/test": "^1.61.0",
     "@spartan-ng/cli": "^0.0.1-alpha.697",
     "@tailwindcss/postcss": "^4.3.1",
     "@types/express": "^5.0.1",

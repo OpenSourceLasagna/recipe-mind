@@ -1,6 +1,5 @@
 import { computed, Injectable, signal } from '@angular/core';
 import { ChatMessage, RecipeContext } from './models/chat-message.model';
-import { RecipeCardDto } from '../dashboard/models/recipe-card.dto';
 import { RecipeResponse } from '../dashboard/models/recipe.model';
 
 @Injectable({ providedIn: 'root' })
@@ -9,22 +8,33 @@ export class ChatStore {
   readonly #isOpen = signal(false);
   readonly #isLoading = signal(false);
   readonly #nextMessageId = signal(0);
-  readonly #aiResults = signal<RecipeCardDto[] | null>(null);
   readonly #activeRecipeId = signal<string | null>(null);
   readonly #contextRecipeId = signal<string | null>(null);
   readonly #contextExcluded = signal(false);
   readonly #focusedMessageId = signal<number | null>(null);
+  readonly #fullscreenSourceMessageId = signal<number | null>(null);
+  readonly #aiDrafts = signal<Record<string, { draft: RecipeResponse; changedFields: string[] }>>(
+    {},
+  );
+  readonly #draftNotificationCount = signal(0);
 
   readonly messages = this.#messages.asReadonly();
   readonly isOpen = this.#isOpen.asReadonly();
   readonly isLoading = this.#isLoading.asReadonly();
   readonly hasMessages = computed(() => this.#messages().length > 0);
-  readonly aiResults = this.#aiResults.asReadonly();
-  readonly hasAiResults = computed(() => (this.#aiResults()?.length ?? 0) > 0);
   readonly activeRecipeId = this.#activeRecipeId.asReadonly();
   readonly contextRecipeId = this.#contextRecipeId.asReadonly();
   readonly contextExcluded = this.#contextExcluded.asReadonly();
   readonly focusedMessageId = this.#focusedMessageId.asReadonly();
+  readonly aiDrafts = this.#aiDrafts.asReadonly();
+  readonly draftNotificationCount = this.#draftNotificationCount.asReadonly();
+  readonly fullscreenSourceMessageId = this.#fullscreenSourceMessageId.asReadonly();
+  readonly fullscreenRecipeContext = computed(() => {
+    const messageId = this.#fullscreenSourceMessageId();
+    if (messageId === null) return null;
+    const message = this.#messages().find((m) => m.id === messageId);
+    return message?.recipeContext ?? null;
+  });
   readonly effectiveContextRecipeId = computed(() => {
     if (this.#contextRecipeId() && !this.#contextExcluded()) {
       return this.#contextRecipeId();
@@ -61,14 +71,6 @@ export class ChatStore {
     this.#isOpen.set(false);
   }
 
-  setAiResults(recipes: RecipeCardDto[]): void {
-    this.#aiResults.set(recipes);
-  }
-
-  clearAiResults(): void {
-    this.#aiResults.set(null);
-  }
-
   setContextRecipe(recipeId: string | null): void {
     this.#contextRecipeId.set(recipeId);
     this.#contextExcluded.set(false);
@@ -99,6 +101,7 @@ export class ChatStore {
     originalRecipe: RecipeResponse,
     modifiedRecipe?: RecipeResponse,
     changedFields?: string[],
+    startInModifiedMode = false,
   ): void {
     if (this.isRecipeExpanded(originalRecipe.id)) {
       return;
@@ -112,6 +115,7 @@ export class ChatStore {
       changedFields,
       isActive: true,
       isEditing: false,
+      startInModifiedMode,
     };
 
     this.addMessage({
@@ -121,6 +125,38 @@ export class ChatStore {
     });
 
     this.setActiveRecipe(originalRecipe.id);
+  }
+
+  moveRecipeMessageToBottom(messageId: number): void {
+    this.#messages.update((msgs) => {
+      const idx = msgs.findIndex((m) => m.id === messageId);
+      if (idx < 0) return msgs;
+      const msg = msgs[idx];
+      const without = [...msgs.slice(0, idx), ...msgs.slice(idx + 1)];
+      return [...without, msg];
+    });
+  }
+
+  updateRecipeMessageDraft(recipeId: string, draft: RecipeResponse, changedFields: string[]): void {
+    this.#deactivateAllRecipes();
+    this.#messages.update((msgs) =>
+      msgs.map((msg) => {
+        if (msg.role === 'recipe' && msg.recipeContext?.originalRecipe.id === recipeId) {
+          return {
+            ...msg,
+            recipeContext: {
+              ...msg.recipeContext,
+              modifiedRecipe: draft,
+              changedFields,
+              isActive: true,
+              startInModifiedMode: true,
+            },
+          };
+        }
+        return msg;
+      }),
+    );
+    this.setActiveRecipe(recipeId);
   }
 
   activateRecipeMessage(messageId: number): void {
@@ -148,50 +184,6 @@ export class ChatStore {
     }
 
     this.#messages.update((msgs) => msgs.filter((msg) => msg.id !== messageId));
-  }
-
-  removeAllRecipeMessages(): RecipeCardDto[] {
-    const recipeMessages = this.#messages().filter(
-      (msg) => msg.role === 'recipe' && msg.recipeContext,
-    );
-
-    const cardDtos: RecipeCardDto[] = recipeMessages.map((msg) => {
-      const recipe = msg.recipeContext!.originalRecipe;
-      return {
-        id: recipe.id,
-        title: recipe.title,
-        difficulty: recipe.difficulty,
-        spice_level: recipe.spiceLevel,
-        durationMinutes: recipe.durationMinutes,
-        servings: recipe.servings,
-      };
-    });
-
-    this.#messages.update((msgs) => msgs.filter((msg) => msg.role !== 'recipe'));
-    this.setActiveRecipe(null);
-
-    return cardDtos;
-  }
-
-  extractRecipeCardDtos(): RecipeCardDto[] {
-    return this.#messages()
-      .filter((msg) => msg.role === 'recipe' && msg.recipeContext)
-      .map((msg) => {
-        const recipe = msg.recipeContext!.originalRecipe;
-        return {
-          id: recipe.id,
-          title: recipe.title,
-          difficulty: recipe.difficulty,
-          spice_level: recipe.spiceLevel,
-          durationMinutes: recipe.durationMinutes,
-          servings: recipe.servings,
-        };
-      });
-  }
-
-  findFirstRecipeMessageId(): number | null {
-    const first = this.#messages().find((msg) => msg.role === 'recipe' && msg.recipeContext);
-    return first?.id ?? null;
   }
 
   #updateActiveAfterRemoval(message: ChatMessage): void {
@@ -286,14 +278,123 @@ export class ChatStore {
     );
   }
 
+  setAiDraft(recipeId: string, draft: RecipeResponse, changedFields: string[]): void {
+    this.#aiDrafts.update((drafts) => ({ ...drafts, [recipeId]: { draft, changedFields } }));
+    this.#draftNotificationCount.update((c) => c + 1);
+  }
+
+  getAiDraft(recipeId: string): { draft: RecipeResponse; changedFields: string[] } | null {
+    return this.#aiDrafts()[recipeId] ?? null;
+  }
+
+  clearAiDraft(recipeId: string): void {
+    this.#aiDrafts.update((drafts) => {
+      if (!(recipeId in drafts)) return drafts;
+      const next = { ...drafts };
+      delete next[recipeId];
+      return next;
+    });
+  }
+
+  consumeAiDraft(recipeId: string): { draft: RecipeResponse; changedFields: string[] } | null {
+    const draft = this.getAiDraft(recipeId);
+    if (draft) {
+      this.clearAiDraft(recipeId);
+    }
+    return draft;
+  }
+
+  acknowledgeDraftProcessed(): void {
+    this.#draftNotificationCount.update((c) => Math.max(0, c - 1));
+  }
+
+  processPendingDrafts(contextRecipe: RecipeResponse | null): void {
+    const count = this.#draftNotificationCount();
+    if (count === 0) return;
+
+    const drafts = this.#aiDrafts();
+    const draftEntries = Object.entries(drafts);
+    if (draftEntries.length === 0) return;
+
+    for (const [recipeId, draftData] of draftEntries) {
+      const existingMessageId = this.findRecipeMessageId(recipeId);
+
+      if (existingMessageId !== null) {
+        this.updateRecipeMessageDraft(recipeId, draftData.draft, draftData.changedFields);
+        this.moveRecipeMessageToBottom(existingMessageId);
+        this.focusRecipeMessage(existingMessageId);
+        this.openFullscreenRecipe(existingMessageId);
+      } else if (contextRecipe && contextRecipe.id === recipeId) {
+        this.expandRecipe(contextRecipe, draftData.draft, draftData.changedFields, true);
+        const newMessageId = this.findRecipeMessageId(recipeId);
+        if (newMessageId !== null) {
+          this.focusRecipeMessage(newMessageId);
+          this.openFullscreenRecipe(newMessageId);
+        }
+      }
+
+      this.clearAiDraft(recipeId);
+      this.acknowledgeDraftProcessed();
+    }
+  }
+
+  dismissRecipeChanges(messageId: number): void {
+    this.#messages.update((msgs) =>
+      msgs.map((msg) => {
+        if (msg.id === messageId && msg.recipeContext) {
+          return {
+            ...msg,
+            recipeContext: {
+              ...msg.recipeContext,
+              modifiedRecipe: undefined,
+              changedFields: undefined,
+            },
+          };
+        }
+        return msg;
+      }),
+    );
+  }
+
+  openFullscreenRecipe(messageId: number): void {
+    const message = this.#messages().find((m) => m.id === messageId);
+    if (!message?.recipeContext) return;
+
+    this.#fullscreenSourceMessageId.set(messageId);
+
+    this.#messages.update((msgs) =>
+      msgs.map((msg) => {
+        if (msg.id === messageId && msg.recipeContext) {
+          return {
+            ...msg,
+            recipeContext: { ...msg.recipeContext, isActive: false },
+          };
+        }
+        return msg;
+      }),
+    );
+  }
+
+  closeFullscreenRecipe(): void {
+    const messageId = this.#fullscreenSourceMessageId();
+    this.#fullscreenSourceMessageId.set(null);
+
+    if (messageId !== null) {
+      this.activateRecipeMessage(messageId);
+      this.focusRecipeMessage(messageId);
+    }
+  }
+
   reset(): void {
     this.#messages.set([]);
     this.#isLoading.set(false);
     this.#nextMessageId.set(0);
-    this.#aiResults.set(null);
     this.#activeRecipeId.set(null);
     this.#contextRecipeId.set(null);
     this.#contextExcluded.set(false);
     this.#focusedMessageId.set(null);
+    this.#fullscreenSourceMessageId.set(null);
+    this.#aiDrafts.set({});
+    this.#draftNotificationCount.set(0);
   }
 }
