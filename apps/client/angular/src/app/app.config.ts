@@ -1,4 +1,10 @@
-import { ApplicationConfig, APP_INITIALIZER, provideBrowserGlobalErrorListeners } from '@angular/core';
+import {
+  ApplicationConfig,
+  APP_INITIALIZER,
+  provideBrowserGlobalErrorListeners,
+  provideAppInitializer,
+  inject,
+} from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideMarkdown } from 'ngx-markdown';
 
@@ -20,11 +26,9 @@ export const appConfig: ApplicationConfig = {
       withFetch(),
     ),
     provideMarkdown(),
-    {
-      provide: APP_INITIALIZER,
-      useFactory: (auth: AuthService) => () => auth.restoreSession(),
-      deps: [AuthService],
-      multi: true,
-    },
+    provideAppInitializer(() => {
+      const authService = inject(AuthService);
+      return authService.restoreSession();
+    })
   ],
 };

@@ -97,11 +97,7 @@ export class ChatService {
   }
 
   private finalizeMessage(message: PendingChatMessage) {
-    if (
-      !message ||
-      typeof message.content !== 'string' ||
-      message.role !== 'assistant'
-    ) {
+    if (!message || typeof message.content !== 'string' || message.role !== 'assistant') {
       return;
     }
     this.#store.addMessage(message as ChatMessage);
@@ -290,21 +286,17 @@ export class ChatService {
 
   #formatRecipeContext(recipeContext: ChatMessage['recipeContext']): string {
     const recipe = recipeContext!.modifiedRecipe ?? recipeContext!.originalRecipe;
-    const ingredientsList =
-      recipe.ingredients?.map((i) => i.ingredientName).join(', ') || 'None';
+    const ingredientsList = recipe.ingredients?.map((i) => i.ingredientName).join(', ') || 'None';
     const contextContent = `- Title: "${recipe.title}" (ID: ${recipe.id}) | Ingredients: [${ingredientsList}]`;
     return `[Context - Recipe in Chat:\n${contextContent}]`;
   }
 
-  #formatRecipeListContext(
-    additionalContent: ChatMessage['additionalContent'],
-  ): string | null {
+  #formatRecipeListContext(additionalContent: ChatMessage['additionalContent']): string | null {
     if (!additionalContent?.recipeList?.length) return null;
 
     const recipesBlock = additionalContent.recipeList
       .map((r) => {
-        const ingredientsList =
-          r.ingredients?.map((i) => i.ingredientName).join(', ') || 'None';
+        const ingredientsList = r.ingredients?.map((i) => i.ingredientName).join(', ') || 'None';
         return `- Title: "${r.title}" (ID: ${r.id}) | Ingredients: [${ingredientsList}]`;
       })
       .join('\n');
@@ -312,9 +304,7 @@ export class ChatService {
     return `[Context - Displayed Recipes:\n${recipesBlock}]`;
   }
 
-  #formatDraftContext(
-    additionalContent: ChatMessage['additionalContent'],
-  ): string | null {
+  #formatDraftContext(additionalContent: ChatMessage['additionalContent']): string | null {
     if (!additionalContent?.recipeDraft) return null;
 
     const draft = additionalContent.recipeDraft as unknown as Record<string, unknown>;

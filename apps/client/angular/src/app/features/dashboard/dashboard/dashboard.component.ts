@@ -71,12 +71,9 @@ export class DashboardComponent {
       }, 200);
       onCleanup(() => clearTimeout(timer));
     });
-
   }
 
   openDetails(id: string): void {
     this.#router.navigate(['/dashboard', 'recipes', id]);
   }
-
-
 }

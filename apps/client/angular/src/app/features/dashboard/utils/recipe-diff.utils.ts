@@ -210,11 +210,27 @@ export function isSectionChanged(diff: RecipeDiff, section: string): boolean {
   }
 }
 
-const SCALAR_FIELDS = ['title', 'servings', 'durationMinutes', 'difficulty', 'spiceLevel', 'origin', 'isPublic'] as const;
+const SCALAR_FIELDS = [
+  'title',
+  'servings',
+  'durationMinutes',
+  'difficulty',
+  'spiceLevel',
+  'origin',
+  'isPublic',
+] as const;
 
-const COMPLEX_FIELDS = ['additionalInformation', 'ingredients', 'instructionSteps', 'nutrition'] as const;
+const COMPLEX_FIELDS = [
+  'additionalInformation',
+  'ingredients',
+  'instructionSteps',
+  'nutrition',
+] as const;
 
-export function getChangedFieldNames(original: RecipeResponse, modified: RecipeResponse): Set<string> {
+export function getChangedFieldNames(
+  original: RecipeResponse,
+  modified: RecipeResponse,
+): Set<string> {
   const changed = new Set<string>();
 
   for (const field of SCALAR_FIELDS) {
@@ -223,7 +239,10 @@ export function getChangedFieldNames(original: RecipeResponse, modified: RecipeR
     }
   }
 
-  if (JSON.stringify(original.additionalInformation) !== JSON.stringify(modified.additionalInformation)) {
+  if (
+    JSON.stringify(original.additionalInformation) !==
+    JSON.stringify(modified.additionalInformation)
+  ) {
     changed.add('additionalInformation');
   }
   if (JSON.stringify(original.ingredients) !== JSON.stringify(modified.ingredients)) {

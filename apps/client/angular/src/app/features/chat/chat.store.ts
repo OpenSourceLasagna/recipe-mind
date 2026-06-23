@@ -32,7 +32,7 @@ export class ChatStore {
   readonly fullscreenRecipeContext = computed(() => {
     const messageId = this.#fullscreenSourceMessageId();
     if (messageId === null) return null;
-    const message = this.#messages().find(m => m.id === messageId);
+    const message = this.#messages().find((m) => m.id === messageId);
     return message?.recipeContext ?? null;
   });
   readonly effectiveContextRecipeId = computed(() => {
@@ -137,11 +137,7 @@ export class ChatStore {
     });
   }
 
-  updateRecipeMessageDraft(
-    recipeId: string,
-    draft: RecipeResponse,
-    changedFields: string[],
-  ): void {
+  updateRecipeMessageDraft(recipeId: string, draft: RecipeResponse, changedFields: string[]): void {
     this.#deactivateAllRecipes();
     this.#messages.update((msgs) =>
       msgs.map((msg) => {
@@ -287,9 +283,7 @@ export class ChatStore {
     this.#draftNotificationCount.update((c) => c + 1);
   }
 
-  getAiDraft(
-    recipeId: string,
-  ): { draft: RecipeResponse; changedFields: string[] } | null {
+  getAiDraft(recipeId: string): { draft: RecipeResponse; changedFields: string[] } | null {
     return this.#aiDrafts()[recipeId] ?? null;
   }
 
@@ -302,9 +296,7 @@ export class ChatStore {
     });
   }
 
-  consumeAiDraft(
-    recipeId: string,
-  ): { draft: RecipeResponse; changedFields: string[] } | null {
+  consumeAiDraft(recipeId: string): { draft: RecipeResponse; changedFields: string[] } | null {
     const draft = this.getAiDraft(recipeId);
     if (draft) {
       this.clearAiDraft(recipeId);
@@ -328,21 +320,12 @@ export class ChatStore {
       const existingMessageId = this.findRecipeMessageId(recipeId);
 
       if (existingMessageId !== null) {
-        this.updateRecipeMessageDraft(
-          recipeId,
-          draftData.draft,
-          draftData.changedFields,
-        );
+        this.updateRecipeMessageDraft(recipeId, draftData.draft, draftData.changedFields);
         this.moveRecipeMessageToBottom(existingMessageId);
         this.focusRecipeMessage(existingMessageId);
         this.openFullscreenRecipe(existingMessageId);
       } else if (contextRecipe && contextRecipe.id === recipeId) {
-        this.expandRecipe(
-          contextRecipe,
-          draftData.draft,
-          draftData.changedFields,
-          true,
-        );
+        this.expandRecipe(contextRecipe, draftData.draft, draftData.changedFields, true);
         const newMessageId = this.findRecipeMessageId(recipeId);
         if (newMessageId !== null) {
           this.focusRecipeMessage(newMessageId);

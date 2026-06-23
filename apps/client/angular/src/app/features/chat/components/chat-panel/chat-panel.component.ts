@@ -206,8 +206,7 @@ export class ChatPanelComponent {
     this.store.setRecipeEditing(messageId, true);
   }
 
-  onSaveAsCopyClick(event: { messageId: number; modifiedRecipe: RecipeResponse }): void {
-  }
+  onSaveAsCopyClick(event: { messageId: number; modifiedRecipe: RecipeResponse }): void {}
 
   onDismissChangesClick(messageId: number): void {
     this.store.dismissRecipeChanges(messageId);

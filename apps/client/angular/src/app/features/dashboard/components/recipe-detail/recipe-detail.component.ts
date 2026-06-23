@@ -22,7 +22,13 @@ import { RecipeResponse } from '../../models/recipe.model';
 @Component({
   selector: 'app-recipe-detail',
   standalone: true,
-  imports: [HlmButton, HlmSkeletonImports, HlmSeparator, RecipeDetailViewComponent, ChatPanelComponent],
+  imports: [
+    HlmButton,
+    HlmSkeletonImports,
+    HlmSeparator,
+    RecipeDetailViewComponent,
+    ChatPanelComponent,
+  ],
   templateUrl: './recipe-detail.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -63,8 +69,7 @@ export class RecipeDetailComponent implements OnDestroy {
     this.detail.saveEdit(patch);
   }
 
-  onSaveAsCopy(modifiedRecipe: RecipeResponse): void {
-  }
+  onSaveAsCopy(modifiedRecipe: RecipeResponse): void {}
 
   onDismissChanges(): void {
     this.detail.clearAiModifiedRecipe();

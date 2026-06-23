@@ -44,8 +44,8 @@ export class RecipeOverlayComponent {
 
   private readonly store = inject(ChatStore);
 
-  private readonly messageId = computed(() =>
-    this.store.findRecipeMessageId(this.recipeContext().originalRecipe.id)!,
+  private readonly messageId = computed(
+    () => this.store.findRecipeMessageId(this.recipeContext().originalRecipe.id)!,
   );
 
   @HostListener('document:keydown.escape')

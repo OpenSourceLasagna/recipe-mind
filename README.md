@@ -11,41 +11,139 @@ The system targets home cooks and food enthusiasts who want more than a static r
 What sets this apart from typical recipe apps is the depth of the search pipeline. Queries go through vector similarity search and PostgreSQL full-text search in parallel, get merged with normalized scoring, then reranked by a cross-encoder model. The result is a search experience that handles both semantic queries like "comforting winter soup" and exact matches like "chicken tikka masala" with equal competence.
 
 ## Architecture
+### System Architecture
 
+```mermaid
+graph TB
+    subgraph Client["🖥️ Client"]
+        Angular["Angular 21 SPA (SSR)<br/>Standalone Components<br/>Signals · OnPush · resource()"]
+    end
+
+    subgraph Auth["🔐 Auth Layer"]
+        SupabaseAuth["Supabase Auth<br/>JWT Verification · RLS<br/>Session Restore"]
+    end
+
+    subgraph Gateway["⚙️ FastAPI Backend"]
+        MidW["Middleware Pipeline<br/>SecurityHeaders → TrustedHost<br/>RequestId → CORS → RateLimit"]
+        Routers["API Routers<br/>/v1/users · /v1/recipes<br/>/v1/search · /v1/ai-chef"]
+        SvcLayer["Service Layer<br/>AIChefService · HybridSearchService<br/>RerankingService · CategoryMatchingService<br/>RecipeIngestionService · RecipeExtractionService"]
+        Repos["Repository Layer<br/>RecipeRepo · IngredientCategoryRepo<br/>QueryCacheRepo"]
+    end
+
+    subgraph Data["💾 Data Layer"]
+        PG[("PostgreSQL + pgvector<br/>pgvector cosine · tsvector GIN<br/>IVFFlat index<br/>RLS policies")]
+    end
+
+    subgraph AI["🤖 AI Services"]
+        OpenAI["OpenAI<br/>GPT-5.4-nano · Responses API<br/>text-embedding-3-small<br/>Moderation API"]
+        LocalModels["Local Models (CPU)<br/>nomic-embed-text-v1.5 (768d)<br/>cross-encoder ms-marco-MiniLM-L-6-v2<br/>Llama-Prompt-Guard-2-86M (ONNX)"]
+    end
+
+    Angular -->|"JWT (Bearer)"| SupabaseAuth
+    Angular -->|"HTTP REST + SSE"| MidW
+    SupabaseAuth -->|"verify token"| MidW
+    MidW --> Routers
+    Routers --> SvcLayer
+    SvcLayer --> Repos
+    Repos --> PG
+    SvcLayer -->|"GPT-5 · Embeddings · Moderation"| OpenAI
+    SvcLayer -->|"Ingredient Embeddings · Reranking · Prompt Guard"| LocalModels
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Angular 21 SPA                           │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │  Auth Module │  │  Dashboard   │  │  AI Chef Chat (SSE)  │  │
-│  │  (Supabase)  │  │  (Recipes)   │  │  (resource() API)    │  │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
-│         │                  │                      │             │
-│         └──────────────────┼──────────────────────┘             │
-│                            │ HTTP / SSE                         │
-└────────────────────────────┼────────────────────────────────────┘
-                             │
-                             ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                     FastAPI Backend                             │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │   Routers    │  │  Services    │  │  Dependencies (DI)   │  │
-│  │  (users,     │  │  (search,    │  │  (composition root)  │  │
-│  │   recipes,   │  │   ai_chef,   │  │                      │  │
-│  │   ai_chef)   │  │   category)  │  │                      │  │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
-│         │                  │                      │             │
-│         └──────────────────┼──────────────────────┘             │
-│                            │                                    │
-└────────────────────────────┼────────────────────────────────────┘
-                             │
-              ┌──────────────┼──────────────┐
-              │              │              │
-              ▼              ▼              ▼
-    ┌──────────────┐  ┌──────────┐  ┌──────────────┐
-    │  PostgreSQL  │  │  OpenAI  │  │  Local Models│
-    │  + pgvector  │  │  (GPT,   │  │  (sentence-  │
-    │  + tsvector  │  │  embed)  │  │  transformers│
-    └──────────────┘  └──────────┘  └──────────────┘
+
+### AI Chef — SSE Streaming & Safety Pipeline
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Angular as Angular SPA
+    participant Router as FastAPI /v1/ai-chef
+    participant RateLimit as Rate Limiter<br/>Token Bucket
+    participant Moderation as Safety Pipeline<br/>Prompt Guard + Moderation
+    participant AIChef as AIChefService
+    participant OpenAI as OpenAI Responses API
+    participant Tools as ToolExecutor
+    participant DB as PostgreSQL
+
+    User->>Angular: Type cooking question
+    Angular->>Router: POST /chat (SSE stream, Bearer JWT)
+
+    par Safety Check (parallel)
+        Router->>RateLimit: Check per-user RPM
+        Router->>Moderation: Prompt Guard (ONNX local)
+        Router->>Moderation: Moderation API (OpenAI)
+    end
+
+    alt Rate limited or blocked
+        Router-->>Angular: SSE error event
+        Angular-->>User: Error message
+    end
+
+    Router->>AIChef: stream_chat(request, user_id)
+    AIChef->>Angular: SSE status: "moderating"
+    AIChef->>Angular: SSE status: "thinking"
+
+    loop Tool Loop (max 5 iterations)
+        AIChef->>OpenAI: responses.stream()<br/>json_schema strict mode
+        OpenAI-->>AIChef: text_delta events
+        AIChef->>Angular: SSE text_delta (streaming reply)
+
+        alt model calls function
+            OpenAI-->>AIChef: function_call event
+            AIChef->>Angular: SSE status: "searching" / "fetching"
+            AIChef->>Tools: execute_tool(name, args)
+            Tools->>DB: hybrid search / get by id
+            DB-->>Tools: results
+            Tools-->>AIChef: tool output (JSON)
+
+            par Moderate tool output
+                AIChef->>Moderation: Prompt Guard
+                AIChef->>Moderation: Moderation API
+            end
+
+            AIChef->>OpenAI: continue stream with tool result
+        end
+    end
+
+    OpenAI-->>AIChef: final structured output
+    AIChef->>Angular: SSE text: AI reply
+    AIChef->>Angular: SSE recipe_list (matching recipes)
+    opt recipe modifications proposed
+        AIChef->>Angular: SSE recipe_draft (diff patch)
+    end
+    AIChef->>Angular: SSE stream complete
+
+    Angular-->>User: Display reply + recipes + diff
+```
+
+### Hybrid Search Pipeline
+
+```mermaid
+flowchart LR
+    Q["🔍 User Query"] --> Cache{"Cache<br/>hit?"}
+
+    Cache -->|"yes"| Embedding["Cached<br/>embedding"]
+    Cache -->|"no"| OpenAIE["OpenAI<br/>text-embedding-3-small<br/>(1536 dimensions)"]
+    OpenAIE --> Embedding
+
+    Embedding --> PgVec
+    Q --> Fts
+
+    subgraph DualPath["Dual-Path Retrieval (parallel)"]
+        direction LR
+        PgVec["pgvector<br/>cosine similarity<br/>IVFFlat index"]
+        Fts["tsvector<br/>full-text search<br/>GIN index"]
+    end
+
+    PgVec --> Merge
+    Fts --> Merge
+
+    Merge["Min-Max Normalization<br/>50/50 Weighted Merge<br/>Top 200 candidates"]
+
+    Merge --> Rerank["Cross-Encoder Reranking<br/>ms-marco-MiniLM-L-6-v2<br/>Filter by score threshold"]
+
+    Rerank --> Sort["Sort & Paginate<br/>(relevance or field-based)"]
+
+    Sort --> Results["📋 Ranked Results<br/>+ total count"]
 ```
 
 The frontend uses standalone components with OnPush change detection, signals for state management, and the resource() API for declarative SSE streaming. SSR with hydration handles initial page loads. The backend follows a repository pattern with a service layer, and FastAPI's Depends system acts as a DI composition root with typed aliases like `RecipeRepo = Annotated[RecipeRepository, Depends(...)]`.

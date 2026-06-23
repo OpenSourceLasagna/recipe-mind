@@ -589,7 +589,7 @@ describe('ChatStore', () => {
         ingredients: [],
         createdAt: '',
         updatedAt: '',
-      } as any);
+      }) as any;
 
     it('should start with empty aiDrafts', () => {
       expect(store.aiDrafts()).toEqual({});
@@ -687,7 +687,7 @@ describe('ChatStore', () => {
         ingredients: [],
         createdAt: '',
         updatedAt: '',
-      } as any);
+      }) as any;
 
     it('should start with null fullscreen state', () => {
       expect(store.fullscreenRecipeContext()).toBeNull();

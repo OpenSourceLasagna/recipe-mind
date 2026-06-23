@@ -122,10 +122,7 @@ describe('computeRecipeDiff', () => {
     it('should detect modified ingredient', () => {
       const orig = makeRecipe();
       const mod = makeRecipe({
-        ingredients: [
-          { ...orig.ingredients[0], quantity: 3, unit: 'cups' },
-          orig.ingredients[1],
-        ],
+        ingredients: [{ ...orig.ingredients[0], quantity: 3, unit: 'cups' }, orig.ingredients[1]],
       });
       const diff = computeRecipeDiff(orig, mod);
 
@@ -158,10 +155,7 @@ describe('computeRecipeDiff', () => {
     });
 
     it('should detect removed step', () => {
-      const diff = computeRecipeDiff(
-        makeRecipe(),
-        makeRecipe({ instructionSteps: ['Step 1'] }),
-      );
+      const diff = computeRecipeDiff(makeRecipe(), makeRecipe({ instructionSteps: ['Step 1'] }));
 
       expect(diff.instructionSteps[1].status).toBe('removed');
     });
@@ -192,10 +186,7 @@ describe('computeRecipeDiff', () => {
     });
 
     it('should detect removed nutrition entry', () => {
-      const diff = computeRecipeDiff(
-        makeRecipe(),
-        makeRecipe({ nutrition: { calories: 300 } }),
-      );
+      const diff = computeRecipeDiff(makeRecipe(), makeRecipe({ nutrition: { calories: 300 } }));
 
       const protein = diff.nutrition.find((n) => n.key === 'protein');
       expect(protein!.status).toBe('removed');
@@ -225,10 +216,7 @@ describe('computeRecipeDiff', () => {
     });
 
     it('should detect removed info', () => {
-      const diff = computeRecipeDiff(
-        makeRecipe(),
-        makeRecipe({ additionalInformation: [] }),
-      );
+      const diff = computeRecipeDiff(makeRecipe(), makeRecipe({ additionalInformation: [] }));
 
       expect(diff.additionalInformation[0].status).toBe('removed');
     });
@@ -287,7 +275,15 @@ describe('getChangedFieldNames', () => {
   it('should detect all scalar fields', () => {
     const fields = getChangedFieldNames(
       makeRecipe(),
-      makeRecipe({ title: 'X', servings: 8, durationMinutes: 45, difficulty: 'hard', spiceLevel: 5, origin: 'French', isPublic: true }),
+      makeRecipe({
+        title: 'X',
+        servings: 8,
+        durationMinutes: 45,
+        difficulty: 'hard',
+        spiceLevel: 5,
+        origin: 'French',
+        isPublic: true,
+      }),
     );
     expect(fields.has('title')).toBe(true);
     expect(fields.has('servings')).toBe(true);
@@ -316,17 +312,16 @@ describe('getChangedFieldNames', () => {
   });
 
   it('should detect nutrition changes', () => {
-    const fields = getChangedFieldNames(
-      makeRecipe(),
-      makeRecipe({ nutrition: { calories: 500 } }),
-    );
+    const fields = getChangedFieldNames(makeRecipe(), makeRecipe({ nutrition: { calories: 500 } }));
     expect(fields.has('nutrition')).toBe(true);
   });
 });
 
 describe('ingredient diff edge cases', () => {
   it('should handle AI adding ingredients (longer modified list)', () => {
-    const orig = makeRecipe({ ingredients: [{ id: 'i-1', ingredientName: 'A', quantity: 1, unit: 'cup', categoryId: null }] });
+    const orig = makeRecipe({
+      ingredients: [{ id: 'i-1', ingredientName: 'A', quantity: 1, unit: 'cup', categoryId: null }],
+    });
     const mod = makeRecipe({
       ingredients: [
         { id: 'i-1', ingredientName: 'A', quantity: 1, unit: 'cup', categoryId: null },

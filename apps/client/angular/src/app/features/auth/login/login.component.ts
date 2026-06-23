@@ -84,6 +84,5 @@ export class LoginComponent {
     this.#router.navigate([this.mode() === 'login' ? 'auth/registration' : 'auth/login']);
   }
 
-  onForgotPassword() {
-  }
+  onForgotPassword() {}
 }

@@ -26,9 +26,7 @@ test.describe('Recipe AI Diff', () => {
     await expect(toggle).not.toBeAttached();
   });
 
-  test('shows diff annotations and save/dismiss footer after AI draft', async ({
-    page,
-  }) => {
+  test('shows diff annotations and save/dismiss footer after AI draft', async ({ page }) => {
     await setupApiMocks(page, { withRecipeDetail: true, withAiDraft: true });
     await loginAndNavigate(page, `/dashboard/recipes/${RECIPE_ID}`);
     await page.waitForSelector('app-recipe-detail-view', {
@@ -52,31 +50,21 @@ test.describe('Recipe AI Diff', () => {
     await changesBtn.click();
 
     await expect(
-      page.locator(
-        'app-recipe-detail-view .rounded-full.bg-amber-50',
-      ).first(),
+      page.locator('app-recipe-detail-view .rounded-full.bg-amber-50').first(),
     ).toBeVisible();
 
-    await expect(
-      page.locator('app-recipe-detail-view li.bg-emerald-50').first(),
-    ).toBeVisible();
+    await expect(page.locator('app-recipe-detail-view li.bg-emerald-50').first()).toBeVisible();
 
     await expect(page.locator('h1 span.text-emerald-600')).toBeVisible();
 
-    const saveBtn = page.locator(
-      'app-recipe-detail-view button:has-text("Save as Copy")',
-    );
+    const saveBtn = page.locator('app-recipe-detail-view button:has-text("Save as Copy")');
     await expect(saveBtn).toBeVisible();
 
-    const dismissBtn = page.locator(
-      'app-recipe-detail-view button:has-text("Dismiss Changes")',
-    );
+    const dismissBtn = page.locator('app-recipe-detail-view button:has-text("Dismiss Changes")');
     await expect(dismissBtn).toBeVisible();
   });
 
-  test('dismiss changes clears diff and hides footer', async ({
-    page,
-  }) => {
+  test('dismiss changes clears diff and hides footer', async ({ page }) => {
     await setupApiMocks(page, { withRecipeDetail: true, withAiDraft: true });
     await loginAndNavigate(page, `/dashboard/recipes/${RECIPE_ID}`);
     await page.waitForSelector('app-recipe-detail-view', {
@@ -99,28 +87,20 @@ test.describe('Recipe AI Diff', () => {
     const changesBtn = toggle.locator('button').last();
     await changesBtn.click();
 
-    const dismissBtn = page.locator(
-      'app-recipe-detail-view button:has-text("Dismiss Changes")',
-    );
+    const dismissBtn = page.locator('app-recipe-detail-view button:has-text("Dismiss Changes")');
     await expect(dismissBtn).toBeVisible();
     await dismissBtn.click();
     await expect(dismissBtn).toBeHidden();
 
     await expect(
-      page.locator(
-        'app-recipe-detail-view button:has-text("Save as Copy")',
-      ),
+      page.locator('app-recipe-detail-view button:has-text("Save as Copy")'),
     ).not.toBeVisible();
     await expect(
-      page.locator(
-        'app-recipe-detail-view button:has-text("Dismiss Changes")',
-      ),
+      page.locator('app-recipe-detail-view button:has-text("Dismiss Changes")'),
     ).not.toBeVisible();
   });
 
-  test('shows compact notification in chat for active recipe draft', async ({
-    page,
-  }) => {
+  test('shows compact notification in chat for active recipe draft', async ({ page }) => {
     await setupApiMocks(page, { withRecipeDetail: true, withAiDraft: true });
     await loginAndNavigate(page, `/dashboard/recipes/${RECIPE_ID}`);
     await page.waitForSelector('app-recipe-detail-view', {
@@ -142,9 +122,7 @@ test.describe('Recipe AI Diff', () => {
     });
   });
 
-  test('spawns single recipe message with changes (no duplicate)', async ({
-    page,
-  }) => {
+  test('spawns single recipe message with changes (no duplicate)', async ({ page }) => {
     await setupApiMocks(page, { withRecipeDetail: true, withAiDraft: true });
     await loginAndNavigate(page, '/dashboard/explore');
     await page.waitForLoadState('networkidle');
@@ -165,29 +143,17 @@ test.describe('Recipe AI Diff', () => {
     await recipeMessages.first().waitFor({ state: 'attached', timeout: 10000 });
     await expect(recipeMessages).toHaveCount(1);
 
-    await expect(
-      recipeMessages.locator('hlm-badge:has-text("Active")'),
-    ).toBeVisible();
-    await expect(
-      recipeMessages.locator('hlm-badge:has-text("Modified")'),
-    ).toBeVisible();
-    await expect(
-      recipeMessages.locator('text=Save as Copy'),
-    ).toBeVisible();
-    await expect(
-      recipeMessages.locator('text=Dismiss Changes'),
-    ).toBeVisible();
+    await expect(recipeMessages.locator('hlm-badge:has-text("Active")')).toBeVisible();
+    await expect(recipeMessages.locator('hlm-badge:has-text("Modified")')).toBeVisible();
+    await expect(recipeMessages.locator('text=Save as Copy')).toBeVisible();
+    await expect(recipeMessages.locator('text=Dismiss Changes')).toBeVisible();
 
-    await expect(
-      page.locator(
-        'app-recipe-message [data-testid="chat-recipe-detail"]',
-      ),
-    ).toHaveCount(1);
+    await expect(page.locator('app-recipe-message [data-testid="chat-recipe-detail"]')).toHaveCount(
+      1,
+    );
   });
 
-  test('dismiss changes removes diff view and footer bar', async ({
-    page,
-  }) => {
+  test('dismiss changes removes diff view and footer bar', async ({ page }) => {
     await setupApiMocks(page, { withRecipeDetail: true, withAiDraft: true });
     await loginAndNavigate(page, '/dashboard/explore');
     await page.waitForLoadState('networkidle');
@@ -234,22 +200,14 @@ test.describe('Recipe AI Diff', () => {
     const recipeMessage = page.locator('app-recipe-message');
     await recipeMessage.first().waitFor({ state: 'visible', timeout: 10000 });
 
-    const chevron = recipeMessage.locator(
-      'button[aria-label="Collapse recipe"]',
-    );
+    const chevron = recipeMessage.locator('button[aria-label="Collapse recipe"]');
     await expect(chevron).toBeVisible();
     await chevron.click();
-    await expect(
-      recipeMessage.locator('button[aria-label="Expand recipe"]'),
-    ).toBeVisible();
+    await expect(recipeMessage.locator('button[aria-label="Expand recipe"]')).toBeVisible();
 
-    const expandBtn = recipeMessage.locator(
-      'button[aria-label="Expand recipe"]',
-    );
+    const expandBtn = recipeMessage.locator('button[aria-label="Expand recipe"]');
     await expandBtn.click();
-    await expect(
-      recipeMessage.locator('button[aria-label="Collapse recipe"]'),
-    ).toBeVisible();
+    await expect(recipeMessage.locator('button[aria-label="Collapse recipe"]')).toBeVisible();
   });
 
   test('shows recipe draft card with View Changes button', async ({ page }) => {
@@ -301,9 +259,7 @@ test.describe('Recipe AI Diff', () => {
     const recipeMessage = page.locator('app-recipe-message');
     await recipeMessage.first().waitFor({ state: 'attached', timeout: 10000 });
 
-    await expect(
-      recipeMessage.locator('hlm-badge:has-text("Modified")'),
-    ).toBeVisible();
+    await expect(recipeMessage.locator('hlm-badge:has-text("Modified")')).toBeVisible();
     await expect(recipeMessage.locator('text=Save as Copy')).toBeVisible();
     await expect(recipeMessage.locator('text=Dismiss Changes')).toBeVisible();
   });

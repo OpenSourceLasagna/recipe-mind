@@ -46,7 +46,10 @@
                 <div class="flex items-center gap-2">
                   <ng-icon hlm name="heroSparkles" class="size-4 text-primary shrink-0" />
                   <span class="text-sm font-medium truncate">{{ draft.title }}</span>
-                  <span class="text-xs text-muted-foreground shrink-0">{{ extra.changedFields?.length ?? 0 }} {{ (extra.changedFields?.length ?? 0) === 1 ? 'change' : 'changes' }}</span>
+                  <span class="text-xs text-muted-foreground shrink-0"
+                    >{{ extra.changedFields?.length ?? 0 }}
+                    {{ (extra.changedFields?.length ?? 0) === 1 ? 'change' : 'changes' }}</span
+                  >
                 </div>
               </div>
             }

@@ -181,9 +181,7 @@ export class RecipeDetailViewComponent {
       if (diff) {
         return diff.nutrition.map((entry) => ({
           key: entry.key.charAt(0).toUpperCase() + entry.key.slice(1),
-          value: String(
-            entry.modified !== null ? entry.modified : entry.original ?? '',
-          ),
+          value: String(entry.modified !== null ? entry.modified : (entry.original ?? '')),
           status: entry.status,
           original: entry.original !== null ? String(entry.original) : null,
         }));
@@ -299,11 +297,7 @@ export class RecipeDetailViewComponent {
     });
 
     effect(() => {
-      if (
-        this.autoSwitchToChanges() &&
-        this.hasModified() &&
-        !this.#userSelectedViewMode
-      ) {
+      if (this.autoSwitchToChanges() && this.hasModified() && !this.#userSelectedViewMode) {
         this.viewMode.set('modified');
       }
     });
@@ -363,7 +357,11 @@ export class RecipeDetailViewComponent {
     setIfChanged('title', this.editForm.title().value().trim(), active.title);
     setIfChanged('origin', this.editForm.origin().value().trim(), active.origin);
     setIfChanged('servings', this.editForm.servings().value(), active.servings);
-    setIfChanged('durationMinutes', this.editForm.durationMinutes().value(), active.durationMinutes);
+    setIfChanged(
+      'durationMinutes',
+      this.editForm.durationMinutes().value(),
+      active.durationMinutes,
+    );
     setIfChanged('difficulty', this.editForm.difficulty().value(), active.difficulty);
     setIfChanged('spiceLevel', this.editForm.spiceLevel().value(), active.spiceLevel);
     setIfChanged('isPublic', this.editForm.isPublic().value(), active.isPublic);

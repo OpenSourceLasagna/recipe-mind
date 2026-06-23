@@ -20,14 +20,9 @@ export async function mockAuth(page: Page): Promise<void> {
 
     const key = 'supabase.auth.token';
     window.localStorage.setItem(key, JSON.stringify(fakeSession));
-    window.localStorage.setItem(
-      `${key}-code-verifier`,
-      JSON.stringify(Date.now()),
-    );
+    window.localStorage.setItem(`${key}-code-verifier`, JSON.stringify(Date.now()));
 
-    const supabaseKey = Object.keys(window.localStorage).find((k) =>
-      k.startsWith('sb-'),
-    );
+    const supabaseKey = Object.keys(window.localStorage).find((k) => k.startsWith('sb-'));
     if (!supabaseKey) {
       window.localStorage.setItem(
         'sb-qtwxzkjiyvtmltwoposv-auth-token',
@@ -42,10 +37,7 @@ export async function waitForApp(page: Page): Promise<void> {
   await page.waitForTimeout(1000);
 }
 
-export async function loginAndNavigate(
-  page: Page,
-  path: string,
-): Promise<void> {
+export async function loginAndNavigate(page: Page, path: string): Promise<void> {
   await mockAuth(page);
   await page.goto(path);
   await waitForApp(page);

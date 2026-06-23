@@ -25,27 +25,29 @@ test.describe('Mobile Debug', () => {
     const storeState = await page.evaluate(() => {
       const el = document.querySelector('app-root');
       if (!el) return 'NO APP ROOT';
-      
+
       // Try to access the chat store via injector
       const win = window as any;
       // Angular 21 might not expose globals
-      
+
       // Alternative: check component instances
       const chatMsgs = document.querySelectorAll('app-chat-message');
       const results = [];
       chatMsgs.forEach((el, i) => {
         // Check for any ng attributes
         const ngAttrs = Array.from(el.attributes)
-          .filter(a => a.name.startsWith('_nghost') || a.name.startsWith('ng-'))
-          .map(a => a.name);
-        results.push(`Msg ${i}: hasDraft=${el.innerHTML.includes('recipeDraft')}, text=${(el as HTMLElement).innerText.substring(0, 60)}`);
+          .filter((a) => a.name.startsWith('_nghost') || a.name.startsWith('ng-'))
+          .map((a) => a.name);
+        results.push(
+          `Msg ${i}: hasDraft=${el.innerHTML.includes('recipeDraft')}, text=${(el as HTMLElement).innerText.substring(0, 60)}`,
+        );
       });
       return results.join('\n');
     });
 
     console.log('=== Store State ===');
     console.log(storeState);
-    
+
     // Also check: does the mock result appear in visible text?
     const visibleText = await page.locator('app-chat-panel').last().innerText();
     console.log('=== Visible Text in last panel ===');

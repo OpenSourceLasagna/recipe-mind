@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { heroSparkles } from '@ng-icons/heroicons/outline';
 import { MarkdownModule } from 'ngx-markdown';
-import { HlmButton } from '@spartan-ng/helm/button';
 import { PanelChatMessage } from '../../models/chat-message.model';
 import { RecipeCardComponent } from '../../../dashboard/components/recipe-card/recipe-card.component';
 import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
@@ -20,7 +19,6 @@ import { RecipeCardDto, toRecipeCardDto } from '../../../dashboard/models/recipe
     HlmSkeletonImports,
     RecipeMessageComponent,
     NgIcon,
-    HlmButton,
   ],
   providers: [provideIcons({ heroSparkles })],
   templateUrl: './chat-message.component.html',

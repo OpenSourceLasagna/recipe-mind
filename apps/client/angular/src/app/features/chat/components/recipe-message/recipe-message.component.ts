@@ -141,23 +141,13 @@ import { RecipeResponse } from '../../../dashboard/models/recipe.model';
       }
 
       @if (isExpanded() && isShowingChanges()) {
-        <div class="flex items-center justify-end gap-2 px-3 py-2 border-t border-border bg-muted/20">
-          <button
-            hlmBtn
-            variant="ghost"
-            size="sm"
-            type="button"
-            (click)="onDismissChanges($event)"
-          >
+        <div
+          class="flex items-center justify-end gap-2 px-3 py-2 border-t border-border bg-muted/20"
+        >
+          <button hlmBtn variant="ghost" size="sm" type="button" (click)="onDismissChanges($event)">
             Dismiss Changes
           </button>
-          <button
-            hlmBtn
-            variant="default"
-            size="sm"
-            type="button"
-            (click)="onSaveAsCopy($event)"
-          >
+          <button hlmBtn variant="default" size="sm" type="button" (click)="onSaveAsCopy($event)">
             <ng-icon hlm name="heroDocumentDuplicate" class="size-3.5 mr-1" />
             Save as Copy
           </button>
@@ -186,9 +176,7 @@ export class RecipeMessageComponent {
 
   readonly hasModified = computed(() => !!this.recipeContext().modifiedRecipe);
 
-  readonly isShowingChanges = computed(
-    () => this.viewMode() === 'modified' && this.hasModified(),
-  );
+  readonly isShowingChanges = computed(() => this.viewMode() === 'modified' && this.hasModified());
 
   constructor() {
     effect(() => {

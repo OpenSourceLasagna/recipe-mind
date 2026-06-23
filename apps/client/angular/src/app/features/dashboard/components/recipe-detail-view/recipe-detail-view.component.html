@@ -1,5 +1,9 @@
 <div class="max-w-3xl mx-auto px-4 py-6 space-y-8">
-  <div class="flex items-center" [class.justify-between]="variant() === 'page'" [class.justify-end]="variant() === 'inline'">
+  <div
+    class="flex items-center"
+    [class.justify-between]="variant() === 'page'"
+    [class.justify-end]="variant() === 'inline'"
+  >
     @if (variant() === 'page') {
       <button
         hlmBtn
@@ -55,7 +59,9 @@
       <h1 class="text-3xl font-bold tracking-tight">
         {{ activeRecipe().title }}
         @if (viewMode() === 'modified' && recipeDiff()?.title; as titleChange) {
-          <span class="inline-flex items-center gap-1 ml-2 text-base font-normal text-muted-foreground">
+          <span
+            class="inline-flex items-center gap-1 ml-2 text-base font-normal text-muted-foreground"
+          >
             <span class="text-muted-foreground/50">→</span>
             <span class="text-emerald-600">{{ titleChange.after }}</span>
           </span>
@@ -118,27 +124,37 @@
     @if (viewMode() === 'modified' && recipeDiff(); as diff) {
       <div class="flex flex-wrap gap-2 mt-2">
         @if (diff.servings; as s) {
-          <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800">
+          <span
+            class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800"
+          >
             Servings: {{ s.before }} → {{ s.after }}
           </span>
         }
         @if (diff.durationMinutes; as d) {
-          <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800">
+          <span
+            class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800"
+          >
             Duration: {{ d.before }} min → {{ d.after }} min
           </span>
         }
         @if (diff.difficulty; as d) {
-          <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800">
+          <span
+            class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800"
+          >
             Difficulty: {{ d.before }} → {{ d.after }}
           </span>
         }
         @if (diff.spiceLevel; as s) {
-          <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800">
+          <span
+            class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800"
+          >
             Spice: {{ s.before }} → {{ s.after }}
           </span>
         }
         @if (diff.origin; as o) {
-          <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800">
+          <span
+            class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800"
+          >
             Origin: {{ o.before }} → {{ o.after }}
           </span>
         }
@@ -214,7 +230,10 @@
 
     @if (!isEditing()) {
       <ul class="space-y-2">
-        @for (item of displayIngredients(); track item.original?.id ?? item.modified?.id ?? $index) {
+        @for (
+          item of displayIngredients();
+          track item.original?.id ?? item.modified?.id ?? $index
+        ) {
           <li
             class="flex items-baseline gap-3 text-sm rounded-r-md pr-2"
             [class.bg-emerald-50]="item.status === 'added'"
@@ -226,7 +245,9 @@
           >
             <span class="font-semibold tabular-nums w-12 text-right">
               @if (item.status === 'modified') {
-                <span class="text-muted-foreground line-through text-xs mr-1">{{ item.original?.quantity }}</span>
+                <span class="text-muted-foreground line-through text-xs mr-1">{{
+                  item.original?.quantity
+                }}</span>
               }
               {{ (item.status === 'removed' ? item.original : item.modified)?.quantity ?? '' }}
             </span>
@@ -238,11 +259,18 @@
               {{ (item.status === 'removed' ? item.original : item.modified)?.unit ?? '' }}
             </span>
             <span class="text-foreground">
-              @if (item.status === 'modified' && item.original?.ingredientName !== item.modified?.ingredientName) {
-                <span class="text-muted-foreground line-through mr-1">{{ item.original?.ingredientName }}</span>
+              @if (
+                item.status === 'modified' &&
+                item.original?.ingredientName !== item.modified?.ingredientName
+              ) {
+                <span class="text-muted-foreground line-through mr-1">{{
+                  item.original?.ingredientName
+                }}</span>
                 <span class="text-muted-foreground/50 mx-0.5">→</span>
               }
-              {{ (item.status === 'removed' ? item.original : item.modified)?.ingredientName ?? '' }}
+              {{
+                (item.status === 'removed' ? item.original : item.modified)?.ingredientName ?? ''
+              }}
             </span>
             @if (item.status === 'added') {
               <span class="text-xs text-emerald-600 font-medium ml-auto">added</span>
@@ -392,7 +420,9 @@
               </div>
               <div class="text-lg font-semibold">
                 @if (entry.status === 'modified') {
-                  <span class="text-muted-foreground line-through text-sm mr-1">{{ entry.original }}</span>
+                  <span class="text-muted-foreground line-through text-sm mr-1">{{
+                    entry.original
+                  }}</span>
                   <span class="text-muted-foreground/50 text-sm mr-1">→</span>
                 }
                 {{ entry.value }}
