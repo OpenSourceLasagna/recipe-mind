@@ -27,7 +27,8 @@ describe('RecipeCreationFormComponent', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('input#title')).toBeTruthy();
     expect(el.querySelector('input#origin')).toBeTruthy();
-    expect(el.querySelector('textarea#instructions')).toBeTruthy();
+    expect(el.querySelector('textarea[placeholder^="Step"]')).toBeTruthy();
+    expect(el.textContent).toContain('Instructions');
     expect(el.textContent).toContain('Nutrition');
   });
 

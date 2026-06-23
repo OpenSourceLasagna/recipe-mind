@@ -24,6 +24,7 @@ import { ChatStore } from '../../chat.store';
       [modifiedRecipe]="recipeContext().modifiedRecipe ?? null"
       [isOwner]="true"
       [isEditing]="recipeContext().isEditing"
+      [isSaving]="isSaving()"
       [autoSwitchToChanges]="recipeContext().startInModifiedMode ?? false"
       [(viewMode)]="viewMode"
       (backClick)="onClose()"
@@ -41,6 +42,7 @@ export class RecipeOverlayComponent {
   readonly overlayClose = output<void>();
 
   readonly viewMode = signal<'original' | 'modified'>('original');
+  readonly isSaving = signal(false);
 
   private readonly store = inject(ChatStore);
 
@@ -62,7 +64,9 @@ export class RecipeOverlayComponent {
   }
 
   onSave(_patch: unknown): void {
+    this.isSaving.set(true);
     this.store.setRecipeEditing(this.messageId(), false);
+    this.isSaving.set(false);
   }
 
   onCancelEdit(): void {
@@ -70,10 +74,14 @@ export class RecipeOverlayComponent {
   }
 
   onSaveAsCopy(_modified: unknown): void {
+    this.isSaving.set(true);
     // no-op: matches existing chat-panel behavior
+    this.isSaving.set(false);
   }
 
   onDismissChanges(): void {
+    this.isSaving.set(true);
     this.store.dismissRecipeChanges(this.messageId());
+    this.isSaving.set(false);
   }
 }

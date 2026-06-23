@@ -5,6 +5,7 @@ import {
   inject,
   OnDestroy,
   PLATFORM_ID,
+  signal,
 } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
@@ -44,6 +45,8 @@ export class RecipeDetailComponent implements OnDestroy {
   readonly Error = Error;
   readonly skeletonItems = Array(6);
 
+  readonly isSaving = signal(false);
+
   constructor() {
     effect(() => {
       if (!isPlatformBrowser(this.#platformId)) return;
@@ -66,7 +69,8 @@ export class RecipeDetailComponent implements OnDestroy {
   }
 
   onSave(patch: RecipePatchRequest): void {
-    this.detail.saveEdit(patch);
+    this.isSaving.set(true);
+    this.detail.saveEdit(patch).finally(() => this.isSaving.set(false));
   }
 
   onSaveAsCopy(modifiedRecipe: RecipeResponse): void {}

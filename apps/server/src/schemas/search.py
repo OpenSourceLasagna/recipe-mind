@@ -26,8 +26,8 @@ class RecipeSearchQuery(CamelModel):
         default=None, description="Text query for hybrid vector + full-text search"
     )
     difficulty: Literal["easy", "medium", "hard"] | None = None
-    spice_level_min: int | None = Field(default=None, ge=1, le=5)
-    spice_level_max: int | None = Field(default=None, ge=1, le=5)
+    spice_level_min: int | None = Field(default=None, ge=0, le=5)
+    spice_level_max: int | None = Field(default=None, ge=0, le=5)
     duration_min: int | None = Field(default=None, ge=0)
     duration_max: int | None = Field(default=None, ge=0)
     servings_min: int | None = Field(default=None, ge=1)

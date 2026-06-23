@@ -159,8 +159,13 @@
         class="mx-auto min-w-full md:min-w-sm"
         [disabled]="isSubmitting() || store.isExtracting()"
       >
-        @if (store.isExtracting()) {
-          Extracting...
+        @if (isSubmitting() || store.isExtracting()) {
+          <ng-icon hlm name="heroArrowPath" class="animate-spin -ml-0.5" />
+          @if (store.isExtracting()) {
+            Extracting...
+          } @else {
+            Saving...
+          }
         } @else if (store.activeMethod() === 'text' || store.activeMethod() === 'link') {
           Extract &amp; Edit
         } @else {

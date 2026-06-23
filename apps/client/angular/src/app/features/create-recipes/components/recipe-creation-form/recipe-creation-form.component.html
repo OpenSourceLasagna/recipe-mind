@@ -49,139 +49,189 @@
           [formField]="store.editorForm.dietTagsText"
           autocomplete="off"
         />
-        <hlm-field-description
-          >Separate tags with commas, semicolons, or new lines.</hlm-field-description
-        >
+        <hlm-field-description>
+          Separate tags with commas, semicolons, or new lines.
+        </hlm-field-description>
       </hlm-field>
     </div>
   </section>
 
-  <section class="grid gap-6 lg:grid-cols-2">
-    <hlm-field>
-      <label hlmFieldLabel for="servings">Servings</label>
-      <input
-        hlmInput
-        id="servings"
-        type="number"
-        step="1"
-        [formField]="store.editorForm.servings"
-      />
-    </hlm-field>
+  <hlm-separator />
 
-    <hlm-field>
-      <label hlmFieldLabel for="duration">Duration (minutes)</label>
-      <input
-        hlmInput
-        id="duration"
-        type="number"
-        step="5"
-        [formField]="store.editorForm.durationMinutes"
-      />
-    </hlm-field>
-  </section>
+  <section class="space-y-3">
+    <h2 class="text-lg font-semibold">Recipe Details</h2>
 
-  <section class="grid gap-6 lg:grid-cols-2">
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <hlm-field>
+        <label hlmFieldLabel>Servings</label>
+        <input hlmInput type="number" step="1" [formField]="store.editorForm.servings" />
+      </hlm-field>
+
+      <hlm-field>
+        <label hlmFieldLabel>Duration (min)</label>
+        <input hlmInput type="number" step="5" [formField]="store.editorForm.durationMinutes" />
+      </hlm-field>
+
+      <hlm-field>
+        <label hlmFieldLabel>Spice Level</label>
+        <div class="flex items-center gap-3">
+          <input
+            type="range"
+            class="w-full accent-primary"
+            min="0"
+            max="5"
+            step="1"
+            [value]="store.editorForm.spiceLevel().value()"
+            (input)="store.editorForm.spiceLevel().value.set(+$any($event.target).value)"
+          />
+          <span class="text-sm font-medium w-4 text-center">
+            {{ store.editorForm.spiceLevel().value() }}
+          </span>
+        </div>
+      </hlm-field>
+
+      <hlm-field>
+        <label hlmFieldLabel>Origin</label>
+        <input hlmInput type="text" [formField]="store.editorForm.origin" />
+      </hlm-field>
+    </div>
+
     <hlm-field>
       <label hlmFieldLabel>Difficulty</label>
-      <div class="grid gap-2 sm:grid-cols-3">
+      <div class="flex gap-2">
         @for (level of DIFFICULTIES; track level) {
-          <label
-            class="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition hover:border-slate-400 cursor-pointer"
+          <button
+            type="button"
+            class="flex-1 rounded-md border px-3 py-2 text-sm capitalize transition"
+            [class.border-primary]="store.editorForm.difficulty().value() === level"
+            [class.bg-primary-5]="store.editorForm.difficulty().value() === level"
+            [class.text-foreground]="store.editorForm.difficulty().value() === level"
+            [class.text-muted-foreground]="store.editorForm.difficulty().value() !== level"
+            (click)="store.editorForm.difficulty().value.set(level)"
           >
-            <input
-              type="radio"
-              name="difficulty"
-              [value]="level"
-              [checked]="store.editorForm.difficulty().value() === level"
-              (change)="store.editorForm.difficulty().value.set(level)"
-            />
-            <span class="capitalize">{{ level }}</span>
-          </label>
+            {{ level }}
+          </button>
         }
       </div>
     </hlm-field>
-
-    <hlm-field>
-      <label hlmFieldLabel for="spice-level">Spice Level</label>
-      <div class="flex items-center gap-4">
-        <input
-          type="range"
-          class="w-full"
-          id="spice-level"
-          step="1"
-          [formField]="store.editorForm.spiceLevel"
-        />
-        <span class="text-sm text-slate-500 font-medium">{{
-          store.editorForm.spiceLevel().value()
-        }}</span>
-      </div>
-    </hlm-field>
   </section>
 
-  <section class="grid gap-6 lg:grid-cols-2">
-    <hlm-field>
-      <label hlmFieldLabel for="instructions">Instruction Steps</label>
-      <textarea
-        hlmTextarea
-        id="instructions"
-        rows="6"
-        placeholder="One instruction per line"
-        [formField]="store.editorForm.instructionsText"
-      ></textarea>
-      <hlm-field-description
-        >Write each step on a separate line for easy parsing.</hlm-field-description
-      >
-      @if (
-        store.editorForm.instructionsText().invalid() &&
-        store.editorForm.instructionsText().touched()
-      ) {
-        <hlm-field-error>
-          @for (error of store.editorForm.instructionsText().errors(); track error.message) {
-            {{ error.message }}
-          }
-        </hlm-field-error>
-      }
-    </hlm-field>
+  <hlm-separator />
 
-    <hlm-field>
-      <label hlmFieldLabel for="additional-info">Additional Information</label>
-      <textarea
-        hlmTextarea
-        id="additional-info"
-        rows="6"
-        placeholder="Tips, substitutions, servings notes"
-        [formField]="store.editorForm.additionalInformationText"
-      ></textarea>
-      <hlm-field-description>Optional notes for the recipe.</hlm-field-description>
-    </hlm-field>
-  </section>
+  <!-- Instructions -->
+  <section class="space-y-3">
+    <h2 class="text-lg font-semibold">Instructions</h2>
 
-  <section class="grid gap-6 lg:grid-cols-2">
-    <div class="rounded-xl border p-4">
-      <div class="mb-4 flex items-center justify-between gap-4">
-        <div>
-          <h2 class="text-base font-semibold">Nutrition</h2>
-          <p class="text-sm text-slate-500">Optional information</p>
+    <div class="space-y-2">
+      @for (step of store.editInstructions(); track $index) {
+        <div class="flex items-start gap-2">
+          <span
+            class="flex-none flex items-center justify-center size-7 rounded-full bg-muted text-xs font-semibold text-muted-foreground mt-2"
+          >
+            {{ $index + 1 }}
+          </span>
+          <textarea
+            hlmTextarea
+            class="flex-1 min-h-[60px]"
+            placeholder="Step {{ $index + 1 }}"
+            [value]="step"
+            (input)="store.onInstructionInput($index, $event)"
+          ></textarea>
+          <button
+            hlmBtn
+            variant="ghost"
+            size="icon"
+            type="button"
+            class="mt-1.5"
+            (click)="store.removeInstruction($index)"
+          >
+            <ng-icon hlm name="heroTrash" />
+          </button>
         </div>
-      </div>
-      <div class="grid gap-4 sm:grid-cols-2">
-        <hlm-field>
-          <label hlmFieldLabel for="calories">Calories</label>
-          <input hlmInput id="calories" type="number" [formField]="store.editorForm.calories" />
-        </hlm-field>
-        <hlm-field>
-          <label hlmFieldLabel for="protein">Protein</label>
-          <input hlmInput id="protein" type="number" [formField]="store.editorForm.protein" />
-        </hlm-field>
-        <hlm-field>
-          <label hlmFieldLabel for="carbs">Carbs</label>
-          <input hlmInput id="carbs" type="number" [formField]="store.editorForm.carbs" />
-        </hlm-field>
-        <hlm-field>
-          <label hlmFieldLabel for="fat">Fat</label>
-          <input hlmInput id="fat" type="number" [formField]="store.editorForm.fat" />
-        </hlm-field>
-      </div>
+      }
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        type="button"
+        class="gap-1.5"
+        (click)="store.addInstruction()"
+      >
+        <ng-icon hlm name="heroPlus" />
+        Add Step
+      </button>
+    </div>
+    @if (!store.instructionsValid().valid && store.editInstructions().some((s) => s.trim())) {
+      <p class="text-destructive text-sm font-medium">{{ store.instructionsValid().message }}</p>
+    }
+  </section>
+
+  <hlm-separator />
+
+  <!-- Additional Information -->
+  <section class="space-y-3">
+    <h2 class="text-lg font-semibold">Additional Information</h2>
+    <p class="text-sm text-muted-foreground">Optional notes, tips, or substitutions.</p>
+
+    <div class="space-y-2">
+      @for (item of store.editAdditionalInfo(); track $index) {
+        <div class="flex items-start gap-2">
+          <textarea
+            hlmTextarea
+            class="flex-1 min-h-[40px]"
+            placeholder="Additional note"
+            [value]="item"
+            (input)="store.onAdditionalInfoInput($index, $event)"
+          ></textarea>
+          <button
+            hlmBtn
+            variant="ghost"
+            size="icon"
+            type="button"
+            class="mt-1.5"
+            (click)="store.removeAdditionalInfo($index)"
+          >
+            <ng-icon hlm name="heroTrash" />
+          </button>
+        </div>
+      }
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        type="button"
+        class="gap-1.5"
+        (click)="store.addAdditionalInfo()"
+      >
+        <ng-icon hlm name="heroPlus" />
+        Add Note
+      </button>
+    </div>
+  </section>
+
+  <hlm-separator />
+
+  <!-- Nutrition + Visibility -->
+  <section class="space-y-3">
+    <h2 class="text-lg font-semibold">Nutrition</h2>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <hlm-field>
+        <label hlmFieldLabel for="calories">Calories</label>
+        <input hlmInput id="calories" type="number" [formField]="store.editorForm.calories" />
+      </hlm-field>
+      <hlm-field>
+        <label hlmFieldLabel for="protein">Protein</label>
+        <input hlmInput id="protein" type="number" [formField]="store.editorForm.protein" />
+      </hlm-field>
+      <hlm-field>
+        <label hlmFieldLabel for="carbs">Carbs</label>
+        <input hlmInput id="carbs" type="number" [formField]="store.editorForm.carbs" />
+      </hlm-field>
+      <hlm-field>
+        <label hlmFieldLabel for="fat">Fat</label>
+        <input hlmInput id="fat" type="number" [formField]="store.editorForm.fat" />
+      </hlm-field>
     </div>
 
     <hlm-field>
@@ -198,6 +248,8 @@
       </div>
     </hlm-field>
   </section>
+
+  <hlm-separator />
 
   <app-recipe-ingredients-edit
     [(ingredients)]="store.editorIngredients"

@@ -30,7 +30,7 @@ class CreateRecipeRequest(CamelModel):
     servings: int = Field(default=4, ge=1)
     duration_minutes: int = Field(default=0, ge=0)
     difficulty: Literal["easy", "medium", "hard"] = "medium"
-    spice_level: int = Field(default=2, ge=1, le=5)
+    spice_level: int = Field(default=0, ge=0, le=5)
     origin: str = "Unknown"
     is_public: bool = False
 

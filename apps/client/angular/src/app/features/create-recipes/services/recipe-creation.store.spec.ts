@@ -145,12 +145,9 @@ describe('RecipeCreationStore', () => {
       expect(request.ingredients[0].unit).toBe('cups');
     });
 
-    it('should split instructions text by newlines and filter empty lines', () => {
-      store.editorModel.set({
-        ...store.editorModel(),
-        title: 'Test',
-        instructionsText: 'step 1\nstep 2\n\n  \nstep 3',
-      });
+    it('should filter empty instruction steps', () => {
+      store.editorModel.set({ ...store.editorModel(), title: 'Test' });
+      store.editInstructions.set(['step 1', 'step 2', '', '  ', 'step 3']);
 
       const request = store.buildRequest();
 
@@ -320,9 +317,12 @@ describe('RecipeCreationStore', () => {
       expect(store.editorModel().servings).toBe(4);
       expect(store.editorModel().difficulty).toBe('medium');
       expect(store.editorModel().origin).toBe('Italian');
-      expect(store.editorModel().instructionsText).toBe(
-        'Boil pasta\nMix eggs and cheese\nCombine and toss',
-      );
+      expect(store.editInstructions()).toEqual([
+        'Boil pasta',
+        'Mix eggs and cheese',
+        'Combine and toss',
+      ]);
+      expect(store.editAdditionalInfo()).toEqual(['Use room temperature eggs']);
       expect(store.editorModel().calories).toBe('450');
       expect(store.editorIngredients().length).toBe(3);
       expect(store.editorIngredients()[0].ingredientName).toBe('spaghetti');
@@ -398,10 +398,12 @@ describe('RecipeCreationStore', () => {
       expect(store.editorModel().difficulty).toBe('medium');
       expect(store.editorModel().spiceLevel).toBe(2);
       expect(store.editorModel().isPublic).toBe(true);
-      expect(store.editorModel().instructionsText).toBe(
-        'Mix dry ingredients\nAdd wet ingredients\nBake at 350F',
-      );
-      expect(store.editorModel().additionalInformationText).toBe('Serve warm\nFreezes well');
+      expect(store.editInstructions()).toEqual([
+        'Mix dry ingredients',
+        'Add wet ingredients',
+        'Bake at 350F',
+      ]);
+      expect(store.editAdditionalInfo()).toEqual(['Serve warm', 'Freezes well']);
       expect(store.editorModel().calories).toBe('300');
       expect(store.editorModel().protein).toBe('8');
       expect(store.editorModel().carbs).toBe('45');
